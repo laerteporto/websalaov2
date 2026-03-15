@@ -1666,10 +1666,7 @@ async function enviarWhatsAppBackend(agId) {
   const btn = document.getElementById('wpp-send-btn-' + agId);
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Enviando...'; }
   try {
-    const cli = State.data.clientes.find(c => c.id === ag.clienteId);
-    const result = await BackendAPI.post('/api/whatsapp/send', {
-      agendamento: { ...ag, clienteTelefone: cli?.telefone || '' }
-    });
+    const result = await BackendAPI.post('/api/whatsapp/send', { agId });
     if (result?.ok) {
       toast('✅ Mensagem enviada via WhatsApp!', 'success');
       closeModal('modal-ag');
@@ -3701,9 +3698,9 @@ async function renderWppConfig(container) {
         <div class="form-group">
           <label class="form-label">URL da Evolution API</label>
           <input class="form-control" id="cfg-url"
-            value="${status.config?.url || 'https://evolution-api-production-a563.up.railway.app'}"
-            placeholder="https://sua-evolution-api.railway.app">
-          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">URL completa da sua Evolution API</div>
+            value="https://evolution-api-production-a563.up.railway.app"
+            placeholder="https://sua-url.railway.app">
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Cole aqui a URL da sua Evolution API</div>
         </div>
         <div class="form-group">
           <label class="form-label">Nome da Instância</label>
@@ -3752,21 +3749,11 @@ async function gerarQRCode() {
 }
 
 async function salvarConfigWpp() {
-  const url      = (document.getElementById('cfg-url')?.value || '').trim();
-  const instance = (document.getElementById('cfg-instance')?.value || '').trim();
-  const apikey   = (document.getElementById('cfg-apikey')?.value || '').trim();
-  const salon    = (document.getElementById('cfg-salon')?.value || '').trim();
-
-  if (!url || !instance) {
-    toast('Preencha a URL e o nome da instância', 'error');
-    return;
-  }
-
   const cfg = {
-    evolutionUrl:      url,
-    evolutionInstance: instance,
-    evolutionApiKey:   apikey || undefined,
-    salonName:         salon || 'Studio Shelly Rodrigues'
+    evolutionUrl:      (document.getElementById('cfg-url')?.value || '').trim(),
+    evolutionInstance: document.getElementById('cfg-instance')?.value || 'shelly',
+    evolutionApiKey:   document.getElementById('cfg-apikey')?.value || undefined,
+    salonName:         document.getElementById('cfg-salon')?.value || 'Studio Shelly Rodrigues'
   };
   const res = await BackendAPI.post('/api/config', cfg);
   if (res?.ok) {
