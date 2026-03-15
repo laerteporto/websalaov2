@@ -3610,7 +3610,7 @@ console.log('[API] Backend:', API_BASE || 'mesmo servidor');
 // Poll backend every 5s for new WhatsApp replies
 let pollInterval = null;
 
-// ─── WhatsApp Connection Panel ────────────────────────────────────────────────
+// ─── WhatsApp ────────────────────────────────────────────────────────────────
 function renderWppConfig(container) {
   const msgs        = State.data.wppMensagens || [];
   const aguardando  = msgs.filter(m => m.enviadoEm && !m.resposta).length;
@@ -3621,25 +3621,22 @@ function renderWppConfig(container) {
 
   container.innerHTML = `
   <div class="page-section">
+
     <div class="kpi-grid page-section">
       <div class="kpi-card" style="--kpi-color:var(--blue)">
-        <div class="kpi-icon">📨</div>
-        <div class="kpi-value">${msgs.length}</div>
+        <div class="kpi-icon">📨</div><div class="kpi-value">${msgs.length}</div>
         <div class="kpi-label">Total enviadas</div>
       </div>
       <div class="kpi-card" style="--kpi-color:var(--gold)">
-        <div class="kpi-icon">⏳</div>
-        <div class="kpi-value">${aguardando}</div>
+        <div class="kpi-icon">⏳</div><div class="kpi-value">${aguardando}</div>
         <div class="kpi-label">Aguardando</div>
       </div>
       <div class="kpi-card" style="--kpi-color:var(--green)">
-        <div class="kpi-icon">✅</div>
-        <div class="kpi-value">${confirmados}</div>
+        <div class="kpi-icon">✅</div><div class="kpi-value">${confirmados}</div>
         <div class="kpi-label">Confirmados</div>
       </div>
       <div class="kpi-card" style="--kpi-color:var(--red)">
-        <div class="kpi-icon">❌</div>
-        <div class="kpi-value">${cancelados}</div>
+        <div class="kpi-icon">❌</div><div class="kpi-value">${cancelados}</div>
         <div class="kpi-label">Cancelados</div>
       </div>
     </div>
@@ -3647,28 +3644,30 @@ function renderWppConfig(container) {
     <div class="card page-section" style="margin-bottom:20px;">
       <div class="card-header">
         <div>
-          <div class="card-title">📱 WhatsApp via Firebase</div>
-          <div class="card-subtitle">Direto pelo celular — sem servidor externo</div>
+          <div class="card-title">📱 WhatsApp — Firebase</div>
+          <div class="card-subtitle">Envio direto pelo celular, confirmações salvas no Firebase</div>
         </div>
-        <span style="font-size:13px;font-weight:600;color:${fbOk?'#25D366':'var(--red)'};">
-          ${fbOk?'🟢 Firebase OK':'🔴 Firebase offline'}
+        <span style="font-size:12px;font-weight:600;padding:4px 12px;border-radius:99px;
+          background:${fbOk?'rgba(37,211,102,0.1)':'rgba(224,92,92,0.1)'};
+          color:${fbOk?'#25D366':'var(--red)'};">
+          ${fbOk?'🟢 Firebase conectado':'🔴 Firebase offline'}
         </span>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
-        <div style="background:var(--bg-card2);border-radius:var(--radius-sm);padding:14px;">
-          <div style="font-size:20px;margin-bottom:6px;">1️⃣</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:4px;">
+        <div style="background:var(--bg-card2);border-radius:var(--radius-sm);padding:16px;">
+          <div style="font-size:22px;margin-bottom:8px;">1️⃣</div>
           <div style="font-size:13px;font-weight:600;color:var(--text);">Abra um agendamento</div>
-          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Na Agenda, clique em qualquer agendamento</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Na Agenda, clique em qualquer horário</div>
         </div>
-        <div style="background:var(--bg-card2);border-radius:var(--radius-sm);padding:14px;">
-          <div style="font-size:20px;margin-bottom:6px;">2️⃣</div>
+        <div style="background:var(--bg-card2);border-radius:var(--radius-sm);padding:16px;">
+          <div style="font-size:22px;margin-bottom:8px;">2️⃣</div>
           <div style="font-size:13px;font-weight:600;color:var(--text);">Clique em Enviar WhatsApp</div>
-          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Abre o app com a mensagem pronta para enviar</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">O WhatsApp abre com a mensagem pronta</div>
         </div>
-        <div style="background:var(--bg-card2);border-radius:var(--radius-sm);padding:14px;">
-          <div style="font-size:20px;margin-bottom:6px;">3️⃣</div>
-          <div style="font-size:13px;font-weight:600;color:var(--text);">Registre a resposta aqui</div>
-          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Use Confirmar ou Cancelar na lista abaixo</div>
+        <div style="background:var(--bg-card2);border-radius:var(--radius-sm);padding:16px;">
+          <div style="font-size:22px;margin-bottom:8px;">3️⃣</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);">Marque a resposta aqui</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Confirmar ou Cancelar na lista abaixo</div>
         </div>
       </div>
     </div>
@@ -3678,42 +3677,53 @@ function renderWppConfig(container) {
         <div>
           <div class="card-title" style="display:flex;align-items:center;gap:8px;">
             📬 Confirmações
-            ${pendentes>0?`<span class="nav-badge">${pendentes}</span>`:''}
+            ${pendentes > 0 ? `<span class="nav-badge">${pendentes}</span>` : ''}
           </div>
-          <div class="card-subtitle">Registre a resposta de cada cliente</div>
+          <div class="card-subtitle">Gerencie as respostas dos clientes</div>
         </div>
         <button class="btn btn-ghost btn-sm"
-          onclick="renderWppConfig(document.getElementById('page-content'))">↻ Atualizar</button>
+          onclick="renderWppConfig(document.getElementById('page-content'))">
+          ↻ Atualizar
+        </button>
       </div>
       <div id="wpp-lista"></div>
     </div>
+
   </div>`;
 
-  // Renderiza lista de confirmações
+  _renderWppLista();
+}
+
+function _renderWppLista() {
   const el = document.getElementById('wpp-lista');
   if (!el) return;
-  const lista = (State.data.wppMensagens||[]).slice().reverse();
+  const lista = (State.data.wppMensagens || []).slice().reverse();
+
   if (!lista.length) {
-    el.innerHTML = `<div class="empty-state" style="padding:32px;">
-      <div class="empty-icon">📭</div>
-      <h3>Nenhuma mensagem ainda</h3>
-      <p>Abra um agendamento na Agenda e clique no botão WhatsApp.</p>
-    </div>`;
+    el.innerHTML = `
+      <div class="empty-state" style="padding:40px 24px;">
+        <div class="empty-icon">📭</div>
+        <h3>Nenhuma mensagem enviada ainda</h3>
+        <p>Vá até a Agenda, abra um agendamento e clique no botão WhatsApp para enviar a confirmação ao cliente.</p>
+      </div>`;
     return;
   }
+
   el.innerHTML = lista.map(m => {
-    const [y,mo,d] = (m.data||'--').split('-');
-    const dataFmt = m.data ? d+'/'+mo+'/'+y : '—';
-    const envio   = m.enviadoEm
-      ? new Date(m.enviadoEm).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
+    const [y,mo,d] = (m.data || '--').split('-');
+    const dataFmt  = m.data ? `${d}/${mo}/${y}` : '—';
+    const envio    = m.enviadoEm
+      ? new Date(m.enviadoEm).toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
       : '—';
-    const tag = m.resposta==='sim'
+
+    const tag = m.resposta === 'sim'
       ? '<span class="wpp-tag-sim">✓ CONFIRMADO</span>'
-      : m.resposta==='nao'
+      : m.resposta === 'nao'
         ? '<span class="wpp-tag-nao">✕ CANCELADO</span>'
         : '<span class="wpp-tag-pending">⏳ Aguardando</span>';
-    const btns = !m.resposta ? `
-      <div style="display:flex;gap:6px;margin-top:10px;">
+
+    const acoes = !m.resposta ? `
+      <div style="display:flex;gap:8px;margin-top:10px;">
         <button class="btn btn-success btn-sm" style="flex:1;"
           onclick="processarResposta(${m.id},'sim');renderWppConfig(document.getElementById('page-content'))">
           ✓ Confirmar
@@ -3723,30 +3733,32 @@ function renderWppConfig(container) {
           ✕ Cancelar
         </button>
       </div>` : '';
+
     return `
-    <div style="display:flex;align-items:flex-start;gap:12px;padding:14px 16px;
+    <div style="display:flex;align-items:flex-start;gap:14px;padding:16px;
       border-bottom:1px solid var(--border-soft);
-      ${!m.lida?'background:rgba(37,211,102,0.03);':''}">
-      <div class="wpp-avatar">${(m.clienteNome||'?').charAt(0)}</div>
+      ${!m.lida ? 'background:rgba(37,211,102,0.025);' : ''}">
+      <div class="wpp-avatar">${(m.clienteNome || '?').charAt(0)}</div>
       <div style="flex:1;min-width:0;">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <span style="font-size:14px;font-weight:600;color:var(--text);">${m.clienteNome}</span>
-          ${!m.lida?'<span style="width:7px;height:7px;background:#25D366;border-radius:50%;display:inline-block;"></span>':''}
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
+          <span style="font-size:14px;font-weight:600;color:var(--text);">${m.clienteNome || '—'}</span>
+          ${!m.lida ? '<span style="width:7px;height:7px;background:#25D366;border-radius:50%;display:inline-block;flex-shrink:0;"></span>' : ''}
           ${tag}
         </div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:3px;">
-          📅 ${dataFmt} às ${m.hora||'—'} · ✂️ ${m.servico||'—'}
+        <div style="font-size:12px;color:var(--text-muted);">
+          📅 ${dataFmt} às ${m.hora || '—'} &nbsp;·&nbsp; ✂️ ${m.servico || '—'}
         </div>
         <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
-          Enviado: ${envio}${m.clienteTel?' · 📞 '+m.clienteTel:''}
+          Enviado em ${envio}
+          ${m.clienteTel ? `&nbsp;·&nbsp; 📞 ${m.clienteTel}` : ''}
         </div>
-        ${btns}
+        ${acoes}
       </div>
-      <button onclick="enviarWhatsApp(${m.agId});setTimeout(()=>renderWppConfig(document.getElementById('page-content')),400)"
-        style="background:rgba(37,211,102,0.12);border:1px solid rgba(37,211,102,0.25);
-          border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer;
-          color:#25D366;white-space:nowrap;flex-shrink:0;">
-        📤 Reenviar
+      <button title="Reenviar mensagem WhatsApp"
+        onclick="enviarWhatsApp(${m.agId});setTimeout(()=>renderWppConfig(document.getElementById('page-content')),500)"
+        style="flex-shrink:0;background:rgba(37,211,102,0.12);border:1px solid rgba(37,211,102,0.3);
+          border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer;color:#25D366;">
+        📤
       </button>
     </div>`;
   }).join('');
@@ -3754,7 +3766,7 @@ function renderWppConfig(container) {
 
 function getWppBtnHTML(sent) {
   return `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-  ${sent?'Reenviar WhatsApp':'Enviar via WhatsApp'}`;
+  ${sent ? 'Reenviar WhatsApp' : 'Enviar via WhatsApp'}`;
 }
 
 
