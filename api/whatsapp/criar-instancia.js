@@ -1,7 +1,7 @@
 const { applyCors } = require('../_cors');
-const EVOLUTION_URL      = process.env.EVOLUTION_URL      || 'https://evolution-api-production-a563.up.railway.app';
+const EVOLUTION_URL = process.env.EVOLUTION_URL || 'https://websalaov2.vercel.app/';
 const EVOLUTION_INSTANCE = process.env.EVOLUTION_INSTANCE || 'shelly';
-const EVOLUTION_API_KEY  = process.env.EVOLUTION_API_KEY  || 'shelly_apikey_2024';
+const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY || 'shelly_apikey_2024';
 module.exports = async function handler(req, res) {
   if (applyCors(req, res)) return;
   if (req.method !== 'POST') return res.status(405).json({ ok: false });

@@ -2378,28 +2378,7 @@
 
     // ─── ENVIAR WHATSAPP ─────────────────────────────────────────────────────────
     async function enviarWhatsAppBackend(agId) {
-      const ag = State.data.agendamentos.find(a => a.id === agId);
-      if (!ag) return;
-      const btn = document.getElementById('wpp-send-btn-' + agId);
-      if (btn) { btn.disabled = true; btn.textContent = '⏳ Enviando...'; }
-      try {
-        const cli = State.data.clientes.find(c => c.id === ag.clienteId);
-        const cfg = getWppConfig();
-        const result = await BackendAPI.post('/api/whatsapp/send', {
-          agendamento: { ...ag, clienteTelefone: cli?.telefone || '' },
-          ...cfg
-        });
-        if (result?.ok) {
-          toast('✅ Mensagem enviada via WhatsApp API!', 'success');
-          closeModal('modal-ag');
-        } else {
-          toast('❌ Erro: ' + (result?.error || 'Falha'), 'error');
-          if (btn) { btn.disabled = false; btn.innerHTML = getWppBtnHTML(false); }
-        }
-      } catch (e) {
-        toast('❌ Erro ao enviar.', 'error');
-        if (btn) btn.disabled = false;
-      }
+      enviarWhatsApp(agId);
     }
 
     // ─── DELETE FIREBASE ─────────────────────────────────────────────────────────
@@ -4329,170 +4308,158 @@
     }
 
 
-
-// ═══ BACKEND API (Evolution API Integration) ═══
-
-// ── Detecta ambiente automaticamente ──────────────────────────────────────────
-// localhost:3000  → backend local (desenvolvimento)
-// GitHub Pages    → Railway (produção)
-// Railway URL     → mesmo origin
-) ();
-
-    console.log('[API] Backend:', API_BASE || 'mesmo servidor');
-    ;
-
-    // Override enviarWhatsApp to use backend
-
-
-    // Poll backend every 5s for new WhatsApp replies
-    let pollInterval = null;
-
-    // ─── WhatsApp ────────────────────────────────────────────────────────────────
-    function getWppConfig() {
-      return Storage.load('wppConfig', {
-        evolutionUrl: 'https://evolution-api-production-a563.up.railway.app',
-        evolutionInstance: 'shelly',
-        evolutionApiKey: '',
-        salonName: 'Studio Shelly Rodrigues'
-      });
-    }
+    // ─── WhatsApp Integration ──────────────────────────────────────────────
 
     // ─── WhatsApp Connection Panel ────────────────────────────────────────────────
-    async function renderWppConfig(container) {
-      container.innerHTML = `<div class="page-section"><div class="card"><div class="card-header">
-    <div><div class="card-title" style="display:flex;align-items:center;gap:8px;"><span style="font-size:20px;">📱</span> Conexão WhatsApp</div>
-    <div class="card-subtitle">Configure a integração com Evolution API</div></div>
-    <button class="btn btn-ghost btn-sm" onclick="renderWppConfig(document.getElementById('page-content'))">↻ Atualizar</button>
-  </div>
-  <div id="wpp-status-area">Verificando conexão...</div></div></div>`;
+    function renderWppConfig(container) {
+      const msgs = State.data.wppMensagens || [];
+      const aguardando = msgs.filter(m => m.enviadoEm && !m.resposta).length;
+      const confirmados = msgs.filter(m => m.resposta === 'sim').length;
+      const cancelados = msgs.filter(m => m.resposta === 'nao').length;
+      const pendentes = msgs.filter(m => !m.lida).length;
+      const fbOk = _fbReady && window.FirebaseDB;
 
-      const cfg = getWppConfig();
-      const status = await BackendAPI.post('/api/status', cfg);
-      const el = document.getElementById('wpp-status-area');
+      container.innerHTML = `
+      <div class="page-section">
 
-      if (!status) {
-        el.innerHTML = `
-      <div style="padding:20px;background:rgba(224,92,92,0.08);border-radius:var(--radius-sm);border:1px solid rgba(224,92,92,0.2);">
-        <div style="font-size:15px;font-weight:600;color:var(--red);margin-bottom:8px;">⚠️ Backend não encontrado</div>
-        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">
-          O servidor Vercel não respondeu.<br>
+        <div class="kpi-grid page-section">
+          <div class="kpi-card" style="--kpi-color:var(--blue)">
+            <div class="kpi-icon">📨</div>
+            <div class="kpi-value">${msgs.length}</div>
+            <div class="kpi-label">Total enviadas</div>
+          </div>
+          <div class="kpi-card" style="--kpi-color:var(--gold)">
+            <div class="kpi-icon">⏳</div>
+            <div class="kpi-value">${aguardando}</div>
+            <div class="kpi-label">Aguardando</div>
+          </div>
+          <div class="kpi-card" style="--kpi-color:var(--green)">
+            <div class="kpi-icon">✅</div>
+            <div class="kpi-value">${confirmados}</div>
+            <div class="kpi-label">Confirmados</div>
+          </div>
+          <div class="kpi-card" style="--kpi-color:var(--red)">
+            <div class="kpi-icon">❌</div>
+            <div class="kpi-value">${cancelados}</div>
+            <div class="kpi-label">Cancelados</div>
+          </div>
         </div>
+
+        <div class="card page-section" style="margin-bottom:20px;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">📱 WhatsApp via Firebase</div>
+              <div class="card-subtitle">Sem servidor externo — integração direta</div>
+            </div>
+            <span style="font-size:13px;font-weight:600;color:${fbOk ? '#25D366' : 'var(--red)'};">
+              ${fbOk ? '🟢 Firebase conectado' : '🔴 Firebase offline'}
+            </span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+            <div style="background:var(--bg-card2);border-radius:var(--radius-sm);padding:14px;">
+              <div style="font-size:20px;margin-bottom:6px;">1️⃣</div>
+              <div style="font-size:13px;font-weight:600;color:var(--text);">Abra um agendamento</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Na Agenda, clique em qualquer agendamento</div>
+            </div>
+            <div style="background:var(--bg-card2);border-radius:var(--radius-sm);padding:14px;">
+              <div style="font-size:20px;margin-bottom:6px;">2️⃣</div>
+              <div style="font-size:13px;font-weight:600;color:var(--text);">Clique em Enviar WhatsApp</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Abre o WhatsApp com a mensagem pronta</div>
+            </div>
+            <div style="background:var(--bg-card2);border-radius:var(--radius-sm);padding:14px;">
+              <div style="font-size:20px;margin-bottom:6px;">3️⃣</div>
+              <div style="font-size:13px;font-weight:600;color:var(--text);">Registre a resposta</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Use os botões abaixo para confirmar ou cancelar</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card page-section">
+          <div class="card-header">
+            <div>
+              <div class="card-title" style="display:flex;align-items:center;gap:8px;">
+                📬 Confirmações
+                ${pendentes > 0 ? `<span class="nav-badge">${pendentes}</span>` : ''}
+              </div>
+              <div class="card-subtitle">Registre a resposta de cada cliente</div>
+            </div>
+            <button class="btn btn-ghost btn-sm"
+              onclick="renderWppConfig(document.getElementById('page-content'))">↻ Atualizar</button>
+          </div>
+          <div id="wpp-lista"></div>
+        </div>
+
       </div>`;
+
+      renderWppLista();
+    }
+
+    function renderWppLista() {
+      const el = document.getElementById('wpp-lista');
+      if (!el) return;
+      const msgs = (State.data.wppMensagens || []).slice().reverse();
+
+      if (!msgs.length) {
+        el.innerHTML = `<div class="empty-state" style="padding:32px;">
+          <div class="empty-icon">📭</div>
+          <h3>Nenhuma mensagem ainda</h3>
+          <p>Abra um agendamento na Agenda e clique no botão WhatsApp.</p>
+        </div>`;
         return;
       }
 
-      const connected = status.evolution?.connected;
-      const state = status.evolution?.state || 'desconhecido';
+      el.innerHTML = msgs.map(m => {
+        const [y, mo, d] = (m.data || '--').split('-');
+        const dataFmt = m.data ? d + '/' + mo + '/' + y : '—';
+        const envio = m.enviadoEm
+          ? new Date(m.enviadoEm).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+          : '—';
 
-      let statusColor = connected ? '#25D366' : 'var(--red)';
-      let statusIcon = connected ? '🟢' : '🔴';
+        const tag = m.resposta === 'sim'
+          ? '<span class="wpp-tag-sim">✓ CONFIRMADO</span>'
+          : m.resposta === 'nao'
+            ? '<span class="wpp-tag-nao">✕ CANCELADO</span>'
+            : '<span class="wpp-tag-pending">⏳ Aguardando</span>';
 
-      el.innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:24px;">
-      <div style="background:var(--bg-card2);border-radius:var(--radius-sm);padding:16px;text-align:center;">
-        <div style="font-size:28px;margin-bottom:6px;">${statusIcon}</div>
-        <div style="font-size:13px;font-weight:600;color:${statusColor};">${connected ? 'Conectado' : 'Desconectado'}</div>
-        <div style="font-size:11px;color:var(--text-muted);">Status WhatsApp</div>
-      </div>
-      <div style="background:var(--bg-card2);border-radius:var(--radius-sm);padding:16px;text-align:center;">
-        <div style="font-size:22px;margin-bottom:6px;">🔌</div>
-        <div style="font-size:13px;font-weight:600;color:var(--text);">${cfg.evolutionInstance || '—'}</div>
-        <div style="font-size:11px;color:var(--text-muted);">Instância</div>
-      </div>
-      <div style="background:var(--bg-card2);border-radius:var(--radius-sm);padding:16px;text-align:center;">
-        <div style="font-size:22px;margin-bottom:6px;">🌐</div>
-        <div style="font-size:13px;font-weight:600;color:var(--text);">${cfg.evolutionUrl || '—'}</div>
-        <div style="font-size:11px;color:var(--text-muted);">Evolution API URL</div>
-      </div>
-    </div>
+        const btns = !m.resposta ? `
+          <div style="display:flex;gap:6px;margin-top:10px;">
+            <button class="btn btn-success btn-sm" style="flex:1;"
+              onclick="processarResposta(${m.id},'sim');renderWppConfig(document.getElementById('page-content'))">
+              ✓ Confirmar
+            </button>
+            <button class="btn btn-danger btn-sm" style="flex:1;"
+              onclick="processarResposta(${m.id},'nao');renderWppConfig(document.getElementById('page-content'))">
+              ✕ Cancelar
+            </button>
+          </div>` : '';
 
-    ${connected ? `
-    <div style="background:rgba(37,211,102,0.08);border:1px solid rgba(37,211,102,0.2);border-radius:var(--radius-sm);padding:16px;margin-bottom:20px;">
-      <div style="font-size:14px;font-weight:600;color:#25D366;margin-bottom:4px;">✅ WhatsApp conectado e funcionando!</div>
-      <div style="font-size:13px;color:var(--text-muted);">Mensagens de confirmação serão enviadas automaticamente.</div>
-    </div>` : `
-    <div style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.2);border-radius:var(--radius-sm);padding:16px;margin-bottom:20px;">
-      <div style="font-size:14px;font-weight:600;color:var(--gold-light);margin-bottom:8px;">📱 Conecte seu WhatsApp Business</div>
-      <div style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Clique em "Gerar QR Code" e escaneie com seu WhatsApp Business.</div>
-      <button class="wpp-btn" onclick="gerarQRCode()">📷 Gerar QR Code</button>
-    </div>`}
-
-    <div id="qr-area"></div>
-
-    <div style="margin-top:24px;">
-      <div class="card-title" style="margin-bottom:16px;">⚙️ Configurações da Evolution API</div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">URL da Evolution API</label>
-          <input class="form-control" id="cfg-url"
-            value="${cfg.evolutionUrl}"
-            placeholder="https://sua-evolution-api.railway.app">
-          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Cole aqui a URL completa da sua Evolution API</div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Nome da Instância</label>
-          <input class="form-control" id="cfg-instance" placeholder="shelly" value="${cfg.evolutionInstance}">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">API Key</label>
-          <input class="form-control" id="cfg-apikey" placeholder="Sua API Key" type="password" value="${cfg.evolutionApiKey || ''}">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Nome do Salão</label>
-          <input class="form-control" id="cfg-salon" placeholder="Studio Shelly Rodrigues" value="${cfg.salonName}">
-        </div>
-      </div>
-      <div style="display:flex;gap:10px;margin-top:4px;">
-        <button class="btn btn-primary" onclick="salvarConfigWpp()">💾 Salvar Configurações</button>
-        <button class="wpp-btn" onclick="criarInstancia()" style="background:rgba(37,211,102,0.2);color:#25D366;box-shadow:none;">+ Criar Instância</button>
-      </div>
-    </div>`;
-    }
-
-    async function gerarQRCode() {
-      document.getElementById('qr-area').innerHTML = `
-    <div style="text-align:center;padding:20px;">
-      <div style="font-size:32px;margin-bottom:8px;">⏳</div>
-      <div style="font-size:13px;color:var(--text-muted);">Gerando QR Code...</div>
-    </div>`;
-
-      const cfg = getWppConfig();
-      const data = await BackendAPI.post('/api/whatsapp/qr', cfg);
-      const el = document.getElementById('qr-area');
-
-      if (data?.ok && data.qrcode) {
-        el.innerHTML = `
-      <div style="text-align:center;padding:20px;background:var(--bg-card2);border-radius:var(--radius);border:1px solid var(--border-soft);">
-        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;">📱 Escaneie com seu WhatsApp Business</div>
-        <img src="${data.qrcode}" style="max-width:220px;border-radius:8px;background:#fff;padding:8px;" alt="QR Code WhatsApp">
-        <div style="font-size:12px;color:var(--text-muted);margin-top:10px;">WhatsApp → ⋮ Menu → Aparelhos conectados → Conectar aparelho</div>
-        <button class="btn btn-ghost btn-sm" style="margin-top:12px;" onclick="gerarQRCode()">↻ Novo QR Code</button>
-      </div>`;
-      } else {
-        el.innerHTML = `<div style="padding:12px;color:var(--red);font-size:13px;">❌ Erro ao gerar QR: ${data?.error || 'Verifique se a Evolution API está rodando'}</div>`;
-      }
-    }
-
-    async function salvarConfigWpp() {
-      const cfg = {
-        evolutionUrl: (document.getElementById('cfg-url')?.value || '').trim(),
-        evolutionInstance: document.getElementById('cfg-instance')?.value || 'shelly',
-        evolutionApiKey: document.getElementById('cfg-apikey')?.value || undefined,
-        salonName: document.getElementById('cfg-salon')?.value || 'Studio Shelly Rodrigues'
-      };
-      Storage.save('wppConfig', cfg);
-      toast('Configurações salvas localmente! ✓', 'success');
-      setTimeout(() => renderWppConfig(document.getElementById('page-content')), 1000);
-    }
-
-    async function criarInstancia() {
-      toast('Criando instância...', 'info');
-      const cfg = getWppConfig();
-      const res = await BackendAPI.post('/api/whatsapp/criar-instancia', cfg);
-      if (res?.ok) { toast('Instância criada! Gere o QR Code.', 'success'); }
-      else { toast(res?.hint || res?.error || 'Erro', 'info'); }
+        return `
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:14px 16px;
+          border-bottom:1px solid var(--border-soft);
+          ${!m.lida ? 'background:rgba(37,211,102,0.03);' : ''}">
+          <div class="wpp-avatar">${(m.clienteNome || '?').charAt(0)}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <span style="font-size:14px;font-weight:600;color:var(--text);">${m.clienteNome}</span>
+              ${!m.lida ? '<span style="width:7px;height:7px;background:#25D366;border-radius:50%;display:inline-block;"></span>' : ''}
+              ${tag}
+            </div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:3px;">
+              📅 ${dataFmt} às ${m.hora || '—'} · ✂️ ${m.servico || '—'}
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
+              Enviado: ${envio}${m.clienteTel ? ' · 📞 ' + m.clienteTel : ''}
+            </div>
+            ${btns}
+          </div>
+          <button onclick="enviarWhatsApp(${m.agId});setTimeout(()=>renderWppConfig(document.getElementById('page-content')),400)"
+            style="background:rgba(37,211,102,0.12);border:1px solid rgba(37,211,102,0.25);
+              border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer;
+              color:#25D366;white-space:nowrap;flex-shrink:0;">
+            📤 Reenviar
+          </button>
+        </div>`;
+      }).join('');
     }
 
     function getWppBtnHTML(sent) {
