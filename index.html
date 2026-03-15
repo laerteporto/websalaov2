@@ -1666,7 +1666,10 @@ async function enviarWhatsAppBackend(agId) {
   const btn = document.getElementById('wpp-send-btn-' + agId);
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Enviando...'; }
   try {
-    const result = await BackendAPI.post('/api/whatsapp/send', { agId });
+    const cli = State.data.clientes.find(c => c.id === ag.clienteId);
+    const result = await BackendAPI.post('/api/whatsapp/send', {
+      agendamento: { ...ag, clienteTelefone: cli?.telefone || '' }
+    });
     if (result?.ok) {
       toast('✅ Mensagem enviada via WhatsApp!', 'success');
       closeModal('modal-ag');
@@ -3674,7 +3677,7 @@ async function renderWppConfig(container) {
       </div>
       <div style="background:var(--bg-card2);border-radius:var(--radius-sm);padding:16px;text-align:center;">
         <div style="font-size:22px;margin-bottom:6px;">🌐</div>
-        <div style="font-size:13px;font-weight:600;color:var(--text);">${(status.config?.url?.includes('vercel') ? 'https://evolution-api-production-a563.up.railway.app' : status.config?.url) || 'https://evolution-api-production-a563.up.railway.app'}</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);">${status.config?.url || '—'}</div>
         <div style="font-size:11px;color:var(--text-muted);">Evolution API URL</div>
       </div>
     </div>
@@ -3699,8 +3702,8 @@ async function renderWppConfig(container) {
           <label class="form-label">URL da Evolution API</label>
           <input class="form-control" id="cfg-url"
             value="https://evolution-api-production-a563.up.railway.app"
-            placeholder="https://sua-url.railway.app">
-          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Cole aqui a URL da sua Evolution API</div>
+            placeholder="https://sua-evolution-api.railway.app">
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Cole aqui a URL completa da sua Evolution API</div>
         </div>
         <div class="form-group">
           <label class="form-label">Nome da Instância</label>
