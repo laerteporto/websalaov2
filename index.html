@@ -3613,7 +3613,15 @@ function exportCSV() {
 
 
 // ═══ BACKEND API (Evolution API Integration) ═══
+
+// ── Detecta ambiente automaticamente ──────────────────────────────────────────
+// localhost:3000  → backend local (desenvolvimento)
+// GitHub Pages    → Railway (produção)
+// Railway URL     → mesmo origin
+)();
+
 console.log('[API] Backend:', API_BASE || 'mesmo servidor');
+;
 
 // Override enviarWhatsApp to use backend
 
@@ -3687,38 +3695,44 @@ async function renderWppConfig(container) {
 
     <div id="qr-area"></div>
 
-    <div style="margin-top:24px;">
-      <div class="card-title" style="margin-bottom:16px;">⚙️ Configurações da Evolution API</div>
+    <div style="margin-top:24px;background:var(--bg-card2);border-radius:var(--radius);padding:20px;border:1px solid var(--border-soft);">
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;">⚙️ Configurações da Evolution API</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:18px;">Preencha os dados da sua instância Evolution API e salve.</div>
+
+      <div class="form-group">
+        <label class="form-label">🌐 URL da Evolution API *</label>
+        <input class="form-control" id="cfg-url"
+          value="${status.config?.url || 'https://evolution-api-production-a563.up.railway.app'}"
+          placeholder="https://sua-evolution-api.railway.app"
+          style="font-family:monospace;font-size:13px;">
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Ex: https://evolution-api-production-xxxx.up.railway.app</div>
+      </div>
+
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">URL da Evolution API</label>
-          <input class="form-control" id="cfg-url"
-            value="https://evolution-api-production-a563.up.railway.app"
-            style="opacity:0.6;cursor:not-allowed;"
-            readonly
-            title="URL da Evolution API (fixada pelo sistema)">
-          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">⚙️ Gerenciada pelo sistema</div>
+          <label class="form-label">🔌 Nome da Instância *</label>
+          <input class="form-control" id="cfg-instance" placeholder="shelly" value="${status.config?.instance || 'shelly'}">
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Nome configurado na Evolution API</div>
         </div>
         <div class="form-group">
-          <label class="form-label">Nome da Instância</label>
-          <input class="form-control" id="cfg-instance" placeholder="shelly" value="${status.config?.instance || ''}">
+          <label class="form-label">🔑 API Key *</label>
+          <input class="form-control" id="cfg-apikey" placeholder="Sua API Key" type="text">
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Deixe vazio para manter a atual</div>
         </div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">API Key</label>
-          <input class="form-control" id="cfg-apikey" placeholder="Sua API Key" type="password">
-          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Deixe em branco para manter a atual</div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Nome do Salão</label>
-          <input class="form-control" id="cfg-salon" placeholder="Studio Shelly Rodrigues" value="${status.config?.salonName || 'Studio Shelly Rodrigues'}">
-        </div>
+
+      <div class="form-group">
+        <label class="form-label">💇 Nome do Salão</label>
+        <input class="form-control" id="cfg-salon" placeholder="Studio Shelly Rodrigues" value="${status.config?.salonName || 'Studio Shelly Rodrigues'}">
       </div>
-      <div style="display:flex;gap:10px;margin-top:4px;">
+
+      <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
         <button class="btn btn-primary" onclick="salvarConfigWpp()">💾 Salvar Configurações</button>
         <button class="wpp-btn" onclick="criarInstancia()" style="background:rgba(37,211,102,0.2);color:#25D366;box-shadow:none;">+ Criar Instância</button>
+        <button class="btn btn-ghost" onclick="testarConexao()">🔍 Testar Conexão</button>
       </div>
+
+      <div id="cfg-feedback" style="margin-top:12px;"></div>
     </div>`;
 }
 
@@ -3746,18 +3760,68 @@ async function gerarQRCode() {
 }
 
 async function salvarConfigWpp() {
-  const cfg = {
-    evolutionUrl:      'https://evolution-api-production-a563.up.railway.app',
-    evolutionInstance: document.getElementById('cfg-instance')?.value || 'shelly',
-    evolutionApiKey:   document.getElementById('cfg-apikey')?.value || undefined,
-    salonName:         document.getElementById('cfg-salon')?.value || 'Studio Shelly Rodrigues'
-  };
+  const url      = document.getElementById('cfg-url')?.value?.trim();
+  const instance = document.getElementById('cfg-instance')?.value?.trim();
+  const apikey   = document.getElementById('cfg-apikey')?.value?.trim();
+  const salon    = document.getElementById('cfg-salon')?.value?.trim();
+
+  if (!url || !instance) {
+    toast('Preencha a URL e o nome da instância', 'error');
+    return;
+  }
+
+  // Salva localmente para uso imediato nesta sessão
+  window._wppConfig = { url, instance, apikey, salon };
+  Storage.save('wppConfig', window._wppConfig);
+
+  const cfg = { evolutionUrl: url, evolutionInstance: instance, evolutionApiKey: apikey || undefined, salonName: salon };
   const res = await BackendAPI.post('/api/config', cfg);
-  if (res?.ok) {
-    toast('Configurações salvas! ✓', 'success');
-    setTimeout(() => renderWppConfig(document.getElementById('page-content')), 1500);
-  } else {
-    toast('Erro ao salvar: ' + (res?.error || ''), 'error');
+
+  const fb = document.getElementById('cfg-feedback');
+  if (fb) {
+    fb.innerHTML = `<div style="padding:10px 14px;background:rgba(37,211,102,0.1);border:1px solid rgba(37,211,102,0.2);border-radius:8px;font-size:13px;color:#25D366;">
+      ✅ Configurações salvas localmente!<br>
+      <span style="font-size:11px;color:var(--text-muted);">Para tornar permanente, atualize as variáveis no painel Vercel:<br>
+      EVOLUTION_URL = ${url}<br>
+      EVOLUTION_INSTANCE = ${instance}<br>
+      EVOLUTION_API_KEY = ${apikey || '(manter atual)'}
+      </span>
+    </div>`;
+  }
+
+  toast('Configurações salvas! Testando conexão...', 'success');
+  setTimeout(() => renderWppConfig(document.getElementById('page-content')), 1800);
+}
+
+async function testarConexao() {
+  const url      = document.getElementById('cfg-url')?.value?.trim();
+  const instance = document.getElementById('cfg-instance')?.value?.trim();
+  const apikey   = document.getElementById('cfg-apikey')?.value?.trim();
+  const fb       = document.getElementById('cfg-feedback');
+
+  if (!url || !instance) {
+    toast('Preencha a URL e a instância antes de testar', 'error');
+    return;
+  }
+
+  if (fb) fb.innerHTML = `<div style="font-size:13px;color:var(--text-muted);">⏳ Testando conexão com ${url}...</div>`;
+
+  try {
+    const r = await fetch(\`\${url}/instance/connectionState/\${instance}\`, {
+      headers: { 'apikey': apikey || 'shelly_apikey_2024' }
+    });
+    const data = await r.json();
+    const state = data?.instance?.state || data?.state || 'unknown';
+    const connected = state === 'open';
+
+    if (fb) fb.innerHTML = connected
+      ? \`<div style="padding:10px 14px;background:rgba(37,211,102,0.1);border:1px solid rgba(37,211,102,0.2);border-radius:8px;font-size:13px;color:#25D366;">🟢 Conexão OK! WhatsApp conectado (estado: \${state})</div>\`
+      : \`<div style="padding:10px 14px;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.2);border-radius:8px;font-size:13px;color:var(--gold-light);">🟡 Evolution API respondeu mas WhatsApp não está conectado.<br><span style="font-size:11px;">Estado: \${state} — Clique em "Gerar QR Code" para conectar.</span></div>\`;
+
+    toast(connected ? '🟢 Evolution API conectada!' : '🟡 API ok, mas WhatsApp desconectado', connected ? 'success' : 'info');
+  } catch(err) {
+    if (fb) fb.innerHTML = \`<div style="padding:10px 14px;background:rgba(224,92,92,0.1);border:1px solid rgba(224,92,92,0.2);border-radius:8px;font-size:13px;color:var(--red);">🔴 Não foi possível conectar: \${err.message}<br><span style="font-size:11px;">Verifique a URL e se a Evolution API está rodando.</span></div>\`;
+    toast('❌ Falha na conexão: ' + err.message, 'error');
   }
 }
 
