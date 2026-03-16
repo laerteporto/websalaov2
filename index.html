@@ -3270,7 +3270,8 @@
       const hora = ag.hora;
       const servico = ag.servicoNome;
       const cliente = ag.clienteNome.split(' ')[0];
-      return `Olá, ${cliente}! 😊\n\nVocê tem um agendamento no *Studio Shelly Rodrigues*:\n\n✂️ *Serviço:* ${servico}\n📅 *Data:* ${data}\n⏰ *Horário:* ${hora}\n\nPara *confirmar* seu agendamento, responda com:\n👉 *SIM*\n\nPara cancelar, responda *NÃO*.\n\nAguardamos você! 💛`;
+      const link = `https://websalaov2.vercel.app/confirmacao.html?id=${ag.id}`;
+      return `Olá, ${cliente}! 😊\n\nVocê tem um agendamento no *Studio Shelly Rodrigues*:\n\n✂️ *Serviço:* ${servico}\n📅 *Data:* ${data}\n⏰ *Horário:* ${hora}\n\nPara *confirmar* ou *cancelar* seu agendamento, acesse o link abaixo:\n👉 ${link}\n\nAguardamos você! 💛`;
     }
 
     function enviarWhatsApp(agId) {
