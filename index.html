@@ -2124,6 +2124,289 @@
 
 <body>
 
+  <!-- ========================================================
+       TELA DE CONFIRMAÇÃO DE AGENDAMENTO (cliente externo)
+       Exibida quando a URL contém ?id=  (link do WhatsApp)
+  ======================================================== -->
+  <div id="confirmacao-overlay" style="display:none; position:fixed; inset:0; z-index:99999;
+    background:#0f0f0f; font-family:'Inter',sans-serif; overflow-y:auto;
+    align-items:center; justify-content:center; padding:24px 16px; min-height:100dvh;">
+
+    <style>
+      #confirmacao-overlay * { box-sizing: border-box; }
+      #conf-card {
+        background:#1a1a1a; border:1px solid #2e2e2e; border-radius:16px;
+        width:100%; max-width:420px; overflow:hidden;
+        box-shadow:0 8px 40px rgba(0,0,0,0.6); margin:auto;
+      }
+      #conf-header {
+        background:linear-gradient(135deg,#1a1400,#2a1f00);
+        border-bottom:1px solid #B8916A;
+        padding:28px 24px 22px; text-align:center;
+      }
+      #conf-header .c-logo { font-size:40px; margin-bottom:8px; }
+      #conf-header .c-name { font-size:18px; font-weight:700; color:#B8916A; }
+      #conf-header .c-sub  { font-size:13px; color:#888; margin-top:2px; }
+      #conf-body { padding:28px 24px; }
+      .c-section-title {
+        font-size:12px; font-weight:600; color:#888;
+        text-transform:uppercase; letter-spacing:0.8px; margin-bottom:16px;
+      }
+      .c-info-grid { display:flex; flex-direction:column; gap:10px; margin-bottom:24px; }
+      .c-info-row {
+        display:flex; align-items:center; gap:12px;
+        background:#242424; border:1px solid #2e2e2e;
+        border-radius:10px; padding:14px 16px;
+      }
+      .c-info-icon { font-size:20px; flex-shrink:0; width:28px; text-align:center; }
+      .c-info-label { font-size:11px; color:#888; font-weight:500; text-transform:uppercase; letter-spacing:0.5px; }
+      .c-info-value { font-size:15px; font-weight:600; color:#f0f0f0; margin-top:2px; }
+      .c-divider { height:1px; background:#2e2e2e; margin:0 0 22px; }
+      .c-question { font-size:15px; font-weight:600; color:#f0f0f0; text-align:center; margin-bottom:14px; }
+      .c-btn-group { display:flex; gap:12px; }
+      .c-btn {
+        flex:1; padding:16px 12px; border:none; border-radius:12px;
+        font-size:15px; font-weight:700; font-family:'Inter',sans-serif;
+        cursor:pointer; display:flex; align-items:center; justify-content:center;
+        gap:8px; transition:transform .12s,filter .12s;
+      }
+      .c-btn:active { transform:scale(0.97); }
+      .c-btn:disabled { opacity:.5; cursor:not-allowed; }
+      .c-btn-ok  { background:#22c55e; color:#fff; }
+      .c-btn-ok:hover:not(:disabled)  { filter:brightness(1.1); }
+      .c-btn-no  { background:#1e1e1e; color:#ef4444; border:1.5px solid #ef4444; }
+      .c-btn-no:hover:not(:disabled)  { background:#2a1010; }
+      .c-feedback {
+        display:none; flex-direction:column; align-items:center;
+        text-align:center; padding:8px 0 4px;
+      }
+      .c-feedback.show { display:flex; }
+      .c-feedback-icon  { font-size:52px; margin-bottom:12px; }
+      .c-feedback-title { font-size:20px; font-weight:700; margin-bottom:8px; }
+      .c-feedback-title.green { color:#22c55e; }
+      .c-feedback-title.red   { color:#ef4444; }
+      .c-feedback-msg   { font-size:14px; color:#888; line-height:1.5; }
+      .c-spinner {
+        width:36px; height:36px; border:3px solid #2e2e2e;
+        border-top-color:#B8916A; border-radius:50%;
+        animation:cspin .8s linear infinite;
+      }
+      @keyframes cspin { to { transform:rotate(360deg); } }
+      .c-loading { display:flex; flex-direction:column; align-items:center; gap:12px; padding:16px 0 8px; }
+      .c-loading-text { font-size:13px; color:#888; }
+      .c-error { display:none; flex-direction:column; align-items:center; text-align:center; gap:10px; padding:8px 0 4px; }
+      .c-error.show { display:flex; }
+      .c-error-icon  { font-size:44px; }
+      .c-error-title { font-size:17px; font-weight:700; color:#ef4444; }
+      .c-error-msg   { font-size:13px; color:#888; line-height:1.5; }
+      .c-already { display:none; flex-direction:column; align-items:center; text-align:center; gap:10px; padding:8px 0 4px; }
+      .c-already.show { display:flex; }
+      .c-already-icon  { font-size:44px; }
+      .c-already-title { font-size:17px; font-weight:700; }
+      .c-already-msg   { font-size:13px; color:#888; line-height:1.5; }
+      #conf-footer { margin-top:20px; font-size:12px; color:#555; text-align:center; }
+    </style>
+
+    <div id="conf-card">
+      <div id="conf-header">
+        <div class="c-logo">✂️</div>
+        <div class="c-name">Studio Shelly Rodrigues</div>
+        <div class="c-sub">Sistema de Gestão</div>
+      </div>
+      <div id="conf-body">
+
+        <!-- Loading -->
+        <div class="c-loading" id="c-loading">
+          <div class="c-spinner"></div>
+          <div class="c-loading-text">Carregando agendamento...</div>
+        </div>
+
+        <!-- Conteúdo principal -->
+        <div id="c-main" style="display:none;">
+          <div class="c-section-title">Detalhes do agendamento</div>
+          <div class="c-info-grid">
+            <div class="c-info-row">
+              <div class="c-info-icon">👤</div>
+              <div>
+                <div class="c-info-label">Cliente</div>
+                <div class="c-info-value" id="c-cliente">—</div>
+              </div>
+            </div>
+            <div class="c-info-row">
+              <div class="c-info-icon">✂️</div>
+              <div>
+                <div class="c-info-label">Serviço</div>
+                <div class="c-info-value" id="c-servico">—</div>
+              </div>
+            </div>
+            <div class="c-info-row">
+              <div class="c-info-icon">📅</div>
+              <div>
+                <div class="c-info-label">Data</div>
+                <div class="c-info-value" id="c-data">—</div>
+              </div>
+            </div>
+            <div class="c-info-row">
+              <div class="c-info-icon">⏰</div>
+              <div>
+                <div class="c-info-label">Horário</div>
+                <div class="c-info-value" id="c-hora">—</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="c-divider"></div>
+
+          <!-- Botões de ação -->
+          <div id="c-action">
+            <div class="c-question">Deseja confirmar este agendamento?</div>
+            <div class="c-btn-group">
+              <button class="c-btn c-btn-ok" id="c-btn-sim"  onclick="confResponder('confirmado')">✅ Confirmar</button>
+              <button class="c-btn c-btn-no" id="c-btn-nao"  onclick="confResponder('cancelado')">❌ Cancelar</button>
+            </div>
+          </div>
+
+          <!-- Feedback confirmado -->
+          <div class="c-feedback" id="c-fb-confirmado">
+            <div class="c-feedback-icon">🎉</div>
+            <div class="c-feedback-title green">Agendamento confirmado!</div>
+            <div class="c-feedback-msg">Ótimo! Sua presença está confirmada.<br>Aguardamos você no Studio Shelly Rodrigues. 💛</div>
+          </div>
+
+          <!-- Feedback cancelado -->
+          <div class="c-feedback" id="c-fb-cancelado">
+            <div class="c-feedback-icon">😔</div>
+            <div class="c-feedback-title red">Agendamento cancelado</div>
+            <div class="c-feedback-msg">Seu agendamento foi cancelado.<br>Quando quiser, entre em contato para reagendar!</div>
+          </div>
+
+          <!-- Já respondido -->
+          <div class="c-already" id="c-already">
+            <div class="c-already-icon" id="c-already-icon">ℹ️</div>
+            <div class="c-already-title" id="c-already-title">Resposta já registrada</div>
+            <div class="c-already-msg"  id="c-already-msg">Este agendamento já foi respondido anteriormente.</div>
+          </div>
+        </div>
+
+        <!-- Erro -->
+        <div class="c-error" id="c-error">
+          <div class="c-error-icon">⚠️</div>
+          <div class="c-error-title">Agendamento não encontrado</div>
+          <div class="c-error-msg">O link pode estar incorreto ou expirado.<br>Entre em contato com o salão.</div>
+        </div>
+
+      </div>
+    </div>
+    <div id="conf-footer">Studio Shelly Rodrigues &copy; 2026</div>
+  </div>
+
+  <!-- Script de confirmação (roda antes do app) -->
+  <script>
+    (function() {
+      var params  = new URLSearchParams(window.location.search);
+      var agId    = params.get('id');
+      // Também funciona se acessar /confirmacao.html?id=X (rota legada)
+      var isConf  = agId !== null && agId !== '';
+
+      if (!isConf) return; // não é link de confirmação, inicializa app normalmente
+
+      // Mostra overlay e bloqueia app
+      var overlay = document.getElementById('confirmacao-overlay');
+      overlay.style.display = 'flex';
+      document.body.style.overflow = 'hidden'; // aguarda o overlay carregar
+      setTimeout(function(){ document.body.style.overflow = ''; }, 100);
+
+      // Aguarda Firebase estar disponível e carrega o agendamento
+      function fmtDate(str) {
+        if (!str) return '—';
+        var p = str.split('-');
+        return p.length === 3 ? p[2]+'/'+p[1]+'/'+p[0] : str;
+      }
+
+      function showError() {
+        document.getElementById('c-loading').style.display = 'none';
+        document.getElementById('c-error').classList.add('show');
+      }
+
+      function showMain() {
+        document.getElementById('c-loading').style.display = 'none';
+        document.getElementById('c-main').style.display = 'block';
+      }
+
+      function showAlready(status) {
+        document.getElementById('c-action').style.display = 'none';
+        var icon  = document.getElementById('c-already-icon');
+        var title = document.getElementById('c-already-title');
+        var msg   = document.getElementById('c-already-msg');
+        var wrap  = document.getElementById('c-already');
+        if (status === 'confirmado') {
+          icon.textContent  = '✅';
+          title.textContent = 'Agendamento já confirmado';
+          title.style.color = '#22c55e';
+          msg.textContent   = 'Você já confirmou este agendamento. Até logo! 💛';
+        } else {
+          icon.textContent  = '❌';
+          title.textContent = 'Agendamento já cancelado';
+          title.style.color = '#ef4444';
+          msg.textContent   = 'Este agendamento já foi cancelado anteriormente.';
+        }
+        wrap.classList.add('show');
+      }
+
+      window._confAgId = agId;
+
+      // Quando Firebase estiver pronto, carrega dados
+      window.addEventListener('firebase-ready', function() {
+        var db = window.FirebaseDB.db;
+        var fbDoc = window.FirebaseDB.doc || null;
+
+        // Importa doc/getDoc dinamicamente
+        import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js')
+          .then(function(fb) {
+            var ref = fb.doc(db, 'agendamentos', String(agId));
+            return fb.getDoc(ref).then(function(snap) {
+              if (!snap.exists()) { showError(); return; }
+              var ag = snap.data();
+              document.getElementById('c-cliente').textContent = ag.clienteNome || '—';
+              document.getElementById('c-servico').textContent = ag.servicoNome || '—';
+              document.getElementById('c-data').textContent    = fmtDate(ag.data);
+              document.getElementById('c-hora').textContent    = ag.hora || '—';
+              showMain();
+
+              if (ag.status === 'confirmado' || ag.status === 'cancelado') {
+                showAlready(ag.status);
+              }
+
+              // Expõe ref para o botão
+              window._confRef = ref;
+              window._confFb  = fb;
+            });
+          })
+          .catch(function() { showError(); });
+      });
+
+      // Função chamada pelos botões
+      window.confResponder = function(novoStatus) {
+        if (!window._confRef || !window._confFb) return;
+        document.getElementById('c-btn-sim').disabled = true;
+        document.getElementById('c-btn-nao').disabled = true;
+
+        window._confFb.updateDoc(window._confRef, {
+          status: novoStatus,
+          confirmadoEm: new Date().toISOString(),
+          confirmadoPeloCliente: true
+        }).then(function() {
+          document.getElementById('c-action').style.display = 'none';
+          document.getElementById('c-fb-' + novoStatus).classList.add('show');
+        }).catch(function() {
+          document.getElementById('c-btn-sim').disabled = false;
+          document.getElementById('c-btn-nao').disabled = false;
+          alert('Erro ao salvar. Tente novamente.');
+        });
+      };
+
+    })();
+  </script>
 
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
@@ -3271,7 +3554,7 @@
       const servico = ag.servicoNome;
       const cliente = ag.clienteNome.split(' ')[0];
 
-      const link = `https://websalaov2.vercel.app/confirmacao.html?id=${ag.id}`;
+      const link = `https://websalaov2.vercel.app/?id=${ag.id}`;
 
       return `Olá, ${cliente}! 😊\n\nVocê tem um agendamento no *Studio Shelly Rodrigues*:\n\n✂️ *Serviço:* ${servico}\n📅 *Data:* ${data}\n⏰ *Horário:* ${hora}\n\nPara *confirmar* ou *cancelar* seu agendamento, acesse o link abaixo:\n👉 ${link}\n\nAguardamos você! 💛`;
     }

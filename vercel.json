@@ -1,12 +1,17 @@
 {
-  "rewrites": [
+  "version": 2,
+  "routes": [
     {
-      "source": "/confirmacao.html",
-      "destination": "/confirmacao.html"
+      "src": "/confirmacao.html",
+      "dest": "/confirmacao.html"
     },
     {
-      "source": "/((?!confirmacao\\.html).*)",
-      "destination": "/index.html"
+      "src": "/confirmacao",
+      "dest": "/confirmacao.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
