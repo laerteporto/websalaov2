@@ -1,457 +1,517 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Confirmação de Agendamento</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #d4a373;
-            --primary-dark: #bc8a5f;
-            --bg: #f9f9f9;
-            --bg-card: #ffffff;
-            --text: #333333;
-            --text-muted: #777777;
-            --border: #eeeeee;
-            --green: #2ecc71;
-            --green-dark: #27ae60;
-            --red: #e74c3c;
-            --red-dark: #c0392b;
-            --radius: 16px;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Confirmar Agendamento — Studio Shelly Rodrigues</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        body {
-            margin: 0;
-            padding: 0;
-            background: var(--bg);
-            font-family: 'Outfit', sans-serif;
-            color: var(--text);
-            display: flex;
-            justify-content: center;
-            min-height: 100vh;
-        }
+    :root {
+      --gold: #c9a84c;
+      --gold-light: #f0d070;
+      --green: #22c55e;
+      --red: #ef4444;
+      --bg: #0f0f0f;
+      --surface: #1a1a1a;
+      --surface2: #242424;
+      --border: #2e2e2e;
+      --text: #f0f0f0;
+      --text-muted: #888;
+      --radius: 16px;
+    }
 
-        .container {
-            width: 100%;
-            max-width: 480px;
-            padding: 20px;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-        }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
 
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            margin-top: 20px;
-        }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 420px;
+      overflow: hidden;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    }
 
-        .header h1 {
-            margin: 0;
-            font-size: 24px;
-            color: var(--primary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+    .card-header {
+      background: linear-gradient(135deg, #1a1400 0%, #2a1f00 100%);
+      border-bottom: 1px solid var(--gold);
+      padding: 28px 24px 22px;
+      text-align: center;
+    }
 
-        .header p {
-            margin: 5px 0 0;
-            font-size: 14px;
-            color: var(--text-muted);
-        }
+    .logo-icon {
+      font-size: 40px;
+      margin-bottom: 8px;
+    }
 
-        .card {
-            background: var(--bg-card);
-            border-radius: var(--radius);
-            padding: 24px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
-            border: 1px solid var(--border);
-        }
+    .salon-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 0.3px;
+    }
 
-        .status-badge {
-            display: inline-block;
-            background: #fff3cd;
-            color: #856404;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 20px;
-        }
+    .salon-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
 
-        .greeting {
-            font-size: 22px;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
+    .card-body {
+      padding: 28px 24px;
+    }
 
-        .subtitle {
-            font-size: 15px;
-            color: var(--text-muted);
-            margin-bottom: 24px;
-            line-height: 1.5;
-        }
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 16px;
+    }
 
-        .price-box {
-            text-align: center;
-            margin-bottom: 24px;
-        }
+    .info-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
 
-        .price-label {
-            font-size: 12px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
+    .info-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
 
-        .price {
-            font-size: 42px;
-            font-weight: 700;
-            color: var(--primary-dark);
-            margin: 0;
-        }
+    .info-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+      width: 28px;
+      text-align: center;
+    }
 
-        .details-box {
-            background: var(--bg);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 24px;
-            border: 1px solid var(--border);
-        }
+    .info-content {}
 
-        .details-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 12px;
-        }
+    .info-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
 
-        .details-row:last-child {
-            margin-bottom: 0;
-        }
+    .info-value {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin-top: 2px;
+    }
 
-        .details-label {
-            color: var(--text-muted);
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 0 0 24px;
+    }
 
-        .details-value {
-            font-weight: 600;
-            font-size: 14px;
-            text-align: right;
-        }
+    .question {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      text-align: center;
+      margin-bottom: 16px;
+    }
 
-        .actions {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
+    .btn-group {
+      display: flex;
+      gap: 12px;
+    }
 
-        .btn {
-            width: 100%;
-            padding: 16px;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            font-family: inherit;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            transition: all 0.2s;
-        }
+    .btn {
+      flex: 1;
+      padding: 16px 12px;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.12s, opacity 0.12s, filter 0.12s;
+    }
 
-        .btn-green {
-            background: var(--green);
-            color: white;
-            box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
-        }
+    .btn:active { transform: scale(0.97); }
 
-        .btn-green:hover {
-            background: var(--green-dark);
-        }
+    .btn-confirm {
+      background: var(--green);
+      color: #fff;
+    }
 
-        .btn-red {
-            background: white;
-            color: var(--red);
-            border: 2px solid var(--red);
-        }
+    .btn-confirm:hover { filter: brightness(1.1); }
 
-        .btn-red:hover {
-            background: #fff5f5;
-        }
+    .btn-cancel {
+      background: #1e1e1e;
+      color: var(--red);
+      border: 1.5px solid var(--red);
+    }
 
-        .loader {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 200px;
-            gap: 15px;
-            color: var(--text-muted);
-        }
+    .btn-cancel:hover { background: #2a1010; }
 
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid var(--border);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
+    /* Estados de feedback */
+    .feedback {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 8px 0 4px;
+    }
 
-        .success-icon {
-            width: 80px;
-            height: 80px;
-            background: var(--green);
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 40px;
-            margin: 0 auto 20px;
-        }
+    .feedback.show { display: flex; }
 
-        .cancel-icon {
-            width: 80px;
-            height: 80px;
-            background: var(--red);
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 40px;
-            margin: 0 auto 20px;
-        }
+    .feedback-icon {
+      font-size: 52px;
+      margin-bottom: 12px;
+    }
 
-        @keyframes spin {
-            100% {
-                transform: rotate(360deg);
-            }
-        }
+    .feedback-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
 
-        #app {
-            display: none;
-        }
+    .feedback-title.green { color: var(--green); }
+    .feedback-title.red   { color: var(--red); }
 
-        #message-box {
-            display: none;
-            text-align: center;
-            padding: 40px 20px;
-        }
-    </style>
+    .feedback-msg {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Loading */
+    .loading-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 0 8px;
+      gap: 12px;
+    }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-text {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* Erro */
+    .error-wrap {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 8px 0 4px;
+      gap: 10px;
+    }
+
+    .error-wrap.show { display: flex; }
+
+    .error-icon { font-size: 44px; }
+
+    .error-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--red);
+    }
+
+    .error-msg {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .footer {
+      margin-top: 20px;
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: center;
+      opacity: 0.6;
+    }
+
+    /* Já respondido */
+    .already-wrap {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 8px 0 4px;
+      gap: 10px;
+    }
+    .already-wrap.show { display: flex; }
+    .already-icon { font-size: 44px; }
+    .already-title { font-size: 17px; font-weight: 700; color: var(--gold); }
+    .already-msg { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+  </style>
 </head>
-
 <body>
 
-    <div class="container">
-        <div class="header">
-            <h1>Studio Shelly Rodrigues</h1>
-            <p>Confirmação de Agendamento</p>
-        </div>
-
-        <!-- Carregando -->
-        <div id="loader" class="loader">
-            <div class="spinner"></div>
-            <div>Buscando agendamento...</div>
-        </div>
-
-        <!-- Card Principal -->
-        <div id="app" class="card">
-            <div style="text-align: center;">
-                <div class="status-badge">⏳ Aguardando sua resposta</div>
-            </div>
-
-            <div class="greeting">Olá, <span id="cli-nome"></span> 👋</div>
-            <div class="subtitle">Segue os detalhes do seu agendamento no salão para a realização de <b><span
-                        id="svc-nome-txt"></span></b>.</div>
-
-            <div class="price-box">
-                <div class="price-label">Valor do Serviço</div>
-                <div class="price">R$ <span id="svc-preco"></span></div>
-            </div>
-
-            <div class="details-box">
-                <div class="details-row">
-                    <div class="details-label">📅 Data</div>
-                    <div class="details-value" id="ag-data"></div>
-                </div>
-                <div class="details-row">
-                    <div class="details-label">⏰ Horário</div>
-                    <div class="details-value" id="ag-hora"></div>
-                </div>
-                <div class="details-row">
-                    <div class="details-label">✨ Serviço</div>
-                    <div class="details-value" id="svc-nome"></div>
-                </div>
-            </div>
-
-            <div class="actions">
-                <button class="btn btn-green" onclick="responder('sim')">
-                    ✓ Aprovar Agendamento
-                </button>
-                <button class="btn btn-red" onclick="responder('nao')">
-                    ✕ Recusar Agendamento
-                </button>
-            </div>
-        </div>
-
-        <!-- Mensagem de Sucesso/Erro -->
-        <div id="message-box" class="card">
-            <div id="msg-icon"></div>
-            <h2 id="msg-title" style="margin: 0 0 10px; color: var(--text);"></h2>
-            <p id="msg-desc" style="color: var(--text-muted); line-height: 1.5; margin: 0;"></p>
-        </div>
+  <div class="card">
+    <div class="card-header">
+      <div class="logo-icon">✂️</div>
+      <div class="salon-name">Studio Shelly Rodrigues</div>
+      <div class="salon-sub">Sistema de Gestão</div>
     </div>
 
-    <!-- Firebase -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore, collection, query, where, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    <div class="card-body" id="card-body">
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyBQcTGkiastpRAjGthU9nHy_uqpQjUMdu0",
-            authDomain: "websalao-2a9d1.firebaseapp.com",
-            projectId: "websalao-2a9d1",
-            storageBucket: "websalao-2a9d1.firebasestorage.app",
-            messagingSenderId: "731611795568",
-            appId: "1:731611795568:web:103e44f116e152961024b5"
-        };
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+      <!-- Loading inicial -->
+      <div class="loading-wrap" id="loading">
+        <div class="spinner"></div>
+        <div class="loading-text">Carregando agendamento...</div>
+      </div>
 
-        function fmtDate(str) {
-            if (!str) return '';
-            const [y, m, d] = str.split('-');
-            return `${d || ''}/${m || ''}/${y || ''}`;
+      <!-- Conteúdo principal (oculto até carregar) -->
+      <div id="main-content" style="display:none;">
+        <div class="section-title">Detalhes do agendamento</div>
+
+        <div class="info-grid">
+          <div class="info-row">
+            <div class="info-icon">👤</div>
+            <div class="info-content">
+              <div class="info-label">Cliente</div>
+              <div class="info-value" id="info-cliente">—</div>
+            </div>
+          </div>
+          <div class="info-row">
+            <div class="info-icon">✂️</div>
+            <div class="info-content">
+              <div class="info-label">Serviço</div>
+              <div class="info-value" id="info-servico">—</div>
+            </div>
+          </div>
+          <div class="info-row">
+            <div class="info-icon">📅</div>
+            <div class="info-content">
+              <div class="info-label">Data</div>
+              <div class="info-value" id="info-data">—</div>
+            </div>
+          </div>
+          <div class="info-row">
+            <div class="info-icon">⏰</div>
+            <div class="info-content">
+              <div class="info-label">Horário</div>
+              <div class="info-value" id="info-hora">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Pergunta + botões -->
+        <div id="action-section">
+          <div class="question">Deseja confirmar este agendamento?</div>
+          <div class="btn-group">
+            <button class="btn btn-confirm" id="btn-confirmar" onclick="responder('confirmado')">
+              ✅ Confirmar
+            </button>
+            <button class="btn btn-cancel" id="btn-cancelar" onclick="responder('cancelado')">
+              ❌ Cancelar
+            </button>
+          </div>
+        </div>
+
+        <!-- Feedback após resposta -->
+        <div class="feedback" id="feedback-confirmado">
+          <div class="feedback-icon">🎉</div>
+          <div class="feedback-title green">Agendamento confirmado!</div>
+          <div class="feedback-msg">Ótimo! Sua presença está confirmada.<br>Aguardamos você no Studio Shelly Rodrigues.</div>
+        </div>
+
+        <div class="feedback" id="feedback-cancelado">
+          <div class="feedback-icon">😔</div>
+          <div class="feedback-title red">Agendamento cancelado</div>
+          <div class="feedback-msg">Seu agendamento foi cancelado.<br>Quando quiser, entre em contato para reagendar!</div>
+        </div>
+
+        <!-- Já havia respondido -->
+        <div class="already-wrap" id="already-section">
+          <div class="already-icon" id="already-icon">ℹ️</div>
+          <div class="already-title" id="already-title">Resposta já registrada</div>
+          <div class="already-msg" id="already-msg">Este agendamento já foi respondido anteriormente.</div>
+        </div>
+      </div>
+
+      <!-- Erro (agendamento não encontrado) -->
+      <div class="error-wrap" id="error-section">
+        <div class="error-icon">⚠️</div>
+        <div class="error-title">Agendamento não encontrado</div>
+        <div class="error-msg">O link pode estar incorreto ou expirado.<br>Entre em contato com o salão.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="footer">Studio Shelly Rodrigues &copy; 2026</div>
+
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, updateDoc }
+      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey:            "AIzaSyBQcTGkiastpRAjGthU9nHy_uqpQjUMdu0",
+      authDomain:        "websalao-2a9d1.firebaseapp.com",
+      projectId:         "websalao-2a9d1",
+      storageBucket:     "websalao-2a9d1.firebasestorage.app",
+      messagingSenderId: "731611795568",
+      appId:             "1:731611795568:web:103e44f116e152961024b5"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db  = getFirestore(app);
+
+    // Pega o id da URL
+    const params = new URLSearchParams(window.location.search);
+    const agId   = params.get('id');
+
+    const $ = id => document.getElementById(id);
+
+    function fmtDate(str) {
+      if (!str) return '—';
+      // str pode vir como "YYYY-MM-DD"
+      const [y, m, d] = str.split('-');
+      if (!d) return str;
+      return `${d}/${m}/${y}`;
+    }
+
+    function showLoading(v) {
+      $('loading').style.display = v ? 'flex' : 'none';
+    }
+
+    function showMain(v) {
+      $('main-content').style.display = v ? 'block' : 'none';
+    }
+
+    function showError() {
+      showLoading(false);
+      $('error-section').classList.add('show');
+    }
+
+    async function init() {
+      if (!agId) { showError(); return; }
+
+      try {
+        const ref  = doc(db, 'agendamentos', String(agId));
+        const snap = await getDoc(ref);
+
+        if (!snap.exists()) { showError(); return; }
+
+        const ag = { ...snap.data(), id: agId };
+
+        // Preenche dados na tela
+        $('info-cliente').textContent = ag.clienteNome || '—';
+        $('info-servico').textContent = ag.servicoNome || '—';
+        $('info-data').textContent    = fmtDate(ag.data);
+        $('info-hora').textContent    = ag.hora || '—';
+
+        showLoading(false);
+        showMain(true);
+
+        // Se já respondeu, mostra estado correto
+        if (ag.status === 'confirmado') {
+          showAlready('confirmado');
+        } else if (ag.status === 'cancelado') {
+          showAlready('cancelado');
         }
 
-        let wppMsgId = null;
-        let agData = null;
-        let agIdStr = null;
+        // Expõe função global para os botões
+        window._agRef = ref;
+        window._ag    = ag;
 
-        async function loadData() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const agId = urlParams.get('id');
+      } catch (e) {
+        console.error(e);
+        showError();
+      }
+    }
 
-            if (!agId) {
-                showError('Link inválido', 'Nenhum agendamento encontrado neste link.');
-                return;
-            }
+    function showAlready(status) {
+      $('action-section').style.display = 'none';
+      const wrap   = $('already-section');
+      const icon   = $('already-icon');
+      const title  = $('already-title');
+      const msg    = $('already-msg');
 
-            agIdStr = agId;
+      if (status === 'confirmado') {
+        icon.textContent  = '✅';
+        title.textContent = 'Agendamento já confirmado';
+        title.style.color = 'var(--green)';
+        msg.textContent   = 'Você já confirmou este agendamento. Até logo!';
+      } else {
+        icon.textContent  = '❌';
+        title.textContent = 'Agendamento já cancelado';
+        title.style.color = 'var(--red)';
+        msg.textContent   = 'Este agendamento já foi cancelado.';
+      }
+      wrap.classList.add('show');
+    }
 
-            try {
-                const qMsg = query(collection(db, "wppMensagens"), where("agId", "==", Number(agId)));
-                const snapMsg = await getDocs(qMsg);
+    window.responder = async function(novoStatus) {
+      if (!window._agRef) return;
 
-                let msgData = null;
-                if (!snapMsg.empty) {
-                    let list = snapMsg.docs.map(d => ({ docId: d.id, ...d.data() }));
-                    list.sort((a, b) => b.id - a.id);
-                    msgData = list[0];
-                    wppMsgId = msgData.docId;
-                }
+      // Desabilita botões para evitar duplo clique
+      $('btn-confirmar').disabled = true;
+      $('btn-cancelar').disabled  = true;
 
-                const qAg = query(collection(db, "agendamentos"), where("id", "==", Number(agId)));
-                const snapAg = await getDocs(qAg);
+      try {
+        await updateDoc(window._agRef, {
+          status:          novoStatus,
+          confirmadoEm:    new Date().toISOString(),
+          confirmadoPeloCliente: true
+        });
 
-                if (!snapAg.empty) {
-                    agData = snapAg.docs[0].data();
-                }
+        // Esconde botões, mostra feedback
+        $('action-section').style.display = 'none';
+        $('feedback-' + novoStatus).classList.add('show');
 
-                if (!msgData || !agData) {
-                    showError('Agendamento não encontrado', 'Os detalhes não puderam ser recuperados.');
-                    return;
-                }
+      } catch (e) {
+        console.error(e);
+        $('btn-confirmar').disabled = false;
+        $('btn-cancelar').disabled  = false;
+        alert('Erro ao salvar resposta. Tente novamente.');
+      }
+    };
 
-                if (msgData.resposta === 'sim') {
-                    showSuccess('Já Confirmado', 'Você já confirmou este agendamento anteriormente. Te esperamos no salão!');
-                    return;
-                } else if (msgData.resposta === 'nao') {
-                    showError('Já Cancelado', 'Você já cancelou este agendamento anteriormente.');
-                    return;
-                }
-
-                document.getElementById('cli-nome').textContent = msgData.clienteNome.split(' ')[0];
-                document.getElementById('svc-nome-txt').textContent = msgData.servico;
-                document.getElementById('svc-nome').textContent = msgData.servico;
-                document.getElementById('ag-data').textContent = fmtDate(msgData.data);
-                document.getElementById('ag-hora').textContent = msgData.hora;
-
-                let valor = agData.valor ? parseFloat(agData.valor).toFixed(2).replace('.', ',') : 'A consultar';
-                document.getElementById('svc-preco').textContent = valor;
-
-                document.getElementById('loader').style.display = 'none';
-                document.getElementById('app').style.display = 'block';
-
-            } catch (e) {
-                console.error(e);
-                showError('Erro de conexão', 'Falha ao conectar com o servidor. Tente novamente mais tarde.');
-            }
-        }
-
-        window.responder = async function (resp) {
-            if (!wppMsgId || !agIdStr) return;
-
-            document.querySelectorAll('.btn').forEach(b => b.disabled = true);
-            document.querySelectorAll('.btn').forEach(b => b.style.opacity = '0.7');
-
-            try {
-                await updateDoc(doc(db, "wppMensagens", String(wppMsgId)), {
-                    resposta: resp,
-                    respostaEm: new Date().toISOString()
-                });
-
-                const novoStatus = resp === 'sim' ? 'confirmado' : 'cancelado';
-                await updateDoc(doc(db, "agendamentos", String(agIdStr)), {
-                    status: novoStatus,
-                    wppResposta: resp
-                });
-
-                if (resp === 'sim') {
-                    showSuccess('Agendamento Confirmado!', 'Recebemos sua confirmação. Lhe aguardamos no salão no horário combinado!');
-                } else {
-                    showError('Agendamento Cancelado', 'Entendemos o seu imprevisto. Você será sempre bem-vindo(a) para remarcar em outra data!');
-                }
-            } catch (e) {
-                console.error(e);
-                alert('Ocorreu um erro ao salvar a resposta. Tente novamente.');
-                document.querySelectorAll('.btn').forEach(b => b.disabled = false);
-                document.querySelectorAll('.btn').forEach(b => b.style.opacity = '1');
-            }
-        };
-
-        function showSuccess(title, desc) {
-            document.getElementById('loader').style.display = 'none';
-            document.getElementById('app').style.display = 'none';
-            document.getElementById('msg-icon').innerHTML = '<div class="success-icon">✓</div>';
-            document.getElementById('msg-title').textContent = title;
-            document.getElementById('msg-desc').textContent = desc;
-            document.getElementById('message-box').style.display = 'block';
-        }
-
-        function showError(title, desc) {
-            document.getElementById('loader').style.display = 'none';
-            document.getElementById('app').style.display = 'none';
-            document.getElementById('msg-icon').innerHTML = '<div class="cancel-icon">✕</div>';
-            document.getElementById('msg-title').textContent = title;
-            document.getElementById('msg-desc').textContent = desc;
-            document.getElementById('message-box').style.display = 'block';
-        }
-
-        loadData();
-    </script>
+    init();
+  </script>
 </body>
-
 </html>
