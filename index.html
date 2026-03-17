@@ -2300,112 +2300,112 @@
     <div id="conf-footer">Studio Shelly Rodrigues &copy; 2026</div>
   </div>
 
-  <!-- Script de confirmação (roda antes do app) -->
-  <script>
-    (function() {
-      var params  = new URLSearchParams(window.location.search);
-      var agId    = params.get('id');
-      // Também funciona se acessar /confirmacao.html?id=X (rota legada)
-      var isConf  = agId !== null && agId !== '';
+  <!-- Script de confirmação -->
+  <script type="module">
+    import { initializeApp }       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, updateDoc }
+                                   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-      if (!isConf) return; // não é link de confirmação, inicializa app normalmente
+    var params = new URLSearchParams(window.location.search);
+    var agId   = params.get('id');
+    if (!agId) return; // não é link de confirmação, sai
 
-      // Mostra overlay e bloqueia app
-      var overlay = document.getElementById('confirmacao-overlay');
-      overlay.style.display = 'flex';
-      document.body.style.overflow = 'hidden'; // aguarda o overlay carregar
-      setTimeout(function(){ document.body.style.overflow = ''; }, 100);
+    // Mostra overlay imediatamente
+    document.getElementById('confirmacao-overlay').style.display = 'flex';
 
-      // Aguarda Firebase estar disponível e carrega o agendamento
-      function fmtDate(str) {
-        if (!str) return '—';
-        var p = str.split('-');
-        return p.length === 3 ? p[2]+'/'+p[1]+'/'+p[0] : str;
+    // Inicializa Firebase próprio (independente do app)
+    const _cfg = {
+      apiKey:            "AIzaSyBQcTGkiastpRAjGthU9nHy_uqpQjUMdu0",
+      authDomain:        "websalao-2a9d1.firebaseapp.com",
+      projectId:         "websalao-2a9d1",
+      storageBucket:     "websalao-2a9d1.firebasestorage.app",
+      messagingSenderId: "731611795568",
+      appId:             "1:731611795568:web:103e44f116e152961024b5"
+    };
+
+    // Usa nome diferente para não conflitar com o app principal
+    let _app, _db;
+    try {
+      _app = initializeApp(_cfg, 'confirmacao');
+    } catch(e) {
+      _app = initializeApp(_cfg); // fallback se já existir
+    }
+    _db = getFirestore(_app);
+
+    function fmtDate(str) {
+      if (!str) return '—';
+      var p = str.split('-');
+      return p.length === 3 ? p[2]+'/'+p[1]+'/'+p[0] : str;
+    }
+
+    function showError() {
+      document.getElementById('c-loading').style.display = 'none';
+      document.getElementById('c-error').classList.add('show');
+    }
+
+    function showMain() {
+      document.getElementById('c-loading').style.display = 'none';
+      document.getElementById('c-main').style.display = 'block';
+    }
+
+    function showAlready(status) {
+      document.getElementById('c-action').style.display = 'none';
+      var icon  = document.getElementById('c-already-icon');
+      var title = document.getElementById('c-already-title');
+      var msg   = document.getElementById('c-already-msg');
+      if (status === 'confirmado') {
+        icon.textContent  = '✅';
+        title.textContent = 'Agendamento já confirmado';
+        title.style.color = '#22c55e';
+        msg.textContent   = 'Você já confirmou este agendamento. Até logo! 💛';
+      } else {
+        icon.textContent  = '❌';
+        title.textContent = 'Agendamento já cancelado';
+        title.style.color = '#ef4444';
+        msg.textContent   = 'Este agendamento já foi cancelado anteriormente.';
       }
+      document.getElementById('c-already').classList.add('show');
+    }
 
-      function showError() {
-        document.getElementById('c-loading').style.display = 'none';
-        document.getElementById('c-error').classList.add('show');
-      }
+    try {
+      const ref  = doc(_db, 'agendamentos', String(agId));
+      const snap = await getDoc(ref);
 
-      function showMain() {
-        document.getElementById('c-loading').style.display = 'none';
-        document.getElementById('c-main').style.display = 'block';
-      }
+      if (!snap.exists()) { showError(); }
+      else {
+        const ag = snap.data();
+        document.getElementById('c-cliente').textContent = ag.clienteNome || '—';
+        document.getElementById('c-servico').textContent = ag.servicoNome || '—';
+        document.getElementById('c-data').textContent    = fmtDate(ag.data);
+        document.getElementById('c-hora').textContent    = ag.hora || '—';
+        showMain();
 
-      function showAlready(status) {
-        document.getElementById('c-action').style.display = 'none';
-        var icon  = document.getElementById('c-already-icon');
-        var title = document.getElementById('c-already-title');
-        var msg   = document.getElementById('c-already-msg');
-        var wrap  = document.getElementById('c-already');
-        if (status === 'confirmado') {
-          icon.textContent  = '✅';
-          title.textContent = 'Agendamento já confirmado';
-          title.style.color = '#22c55e';
-          msg.textContent   = 'Você já confirmou este agendamento. Até logo! 💛';
-        } else {
-          icon.textContent  = '❌';
-          title.textContent = 'Agendamento já cancelado';
-          title.style.color = '#ef4444';
-          msg.textContent   = 'Este agendamento já foi cancelado anteriormente.';
+        if (ag.status === 'confirmado' || ag.status === 'cancelado') {
+          showAlready(ag.status);
         }
-        wrap.classList.add('show');
-      }
 
-      window._confAgId = agId;
-
-      // Quando Firebase estiver pronto, carrega dados
-      window.addEventListener('firebase-ready', function() {
-        var db = window.FirebaseDB.db;
-        var fbDoc = window.FirebaseDB.doc || null;
-
-        // Importa doc/getDoc dinamicamente
-        import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js')
-          .then(function(fb) {
-            var ref = fb.doc(db, 'agendamentos', String(agId));
-            return fb.getDoc(ref).then(function(snap) {
-              if (!snap.exists()) { showError(); return; }
-              var ag = snap.data();
-              document.getElementById('c-cliente').textContent = ag.clienteNome || '—';
-              document.getElementById('c-servico').textContent = ag.servicoNome || '—';
-              document.getElementById('c-data').textContent    = fmtDate(ag.data);
-              document.getElementById('c-hora').textContent    = ag.hora || '—';
-              showMain();
-
-              if (ag.status === 'confirmado' || ag.status === 'cancelado') {
-                showAlready(ag.status);
-              }
-
-              // Expõe ref para o botão
-              window._confRef = ref;
-              window._confFb  = fb;
+        window.confResponder = async function(novoStatus) {
+          document.getElementById('c-btn-sim').disabled = true;
+          document.getElementById('c-btn-nao').disabled = true;
+          try {
+            await updateDoc(ref, {
+              status: novoStatus,
+              confirmadoEm: new Date().toISOString(),
+              confirmadoPeloCliente: true
             });
-          })
-          .catch(function() { showError(); });
-      });
-
-      // Função chamada pelos botões
-      window.confResponder = function(novoStatus) {
-        if (!window._confRef || !window._confFb) return;
-        document.getElementById('c-btn-sim').disabled = true;
-        document.getElementById('c-btn-nao').disabled = true;
-
-        window._confFb.updateDoc(window._confRef, {
-          status: novoStatus,
-          confirmadoEm: new Date().toISOString(),
-          confirmadoPeloCliente: true
-        }).then(function() {
-          document.getElementById('c-action').style.display = 'none';
-          document.getElementById('c-fb-' + novoStatus).classList.add('show');
-        }).catch(function() {
-          document.getElementById('c-btn-sim').disabled = false;
-          document.getElementById('c-btn-nao').disabled = false;
-          alert('Erro ao salvar. Tente novamente.');
-        });
-      };
-
-    })();
+            document.getElementById('c-action').style.display = 'none';
+            document.getElementById('c-fb-' + novoStatus).classList.add('show');
+          } catch(e) {
+            document.getElementById('c-btn-sim').disabled = false;
+            document.getElementById('c-btn-nao').disabled = false;
+            alert('Erro ao salvar. Tente novamente.');
+          }
+        };
+      }
+    } catch(e) {
+      console.error(e);
+      showError();
+    }
   </script>
 
   <!-- SIDEBAR -->
