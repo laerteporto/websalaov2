@@ -3554,7 +3554,7 @@
       const servico = ag.servicoNome;
       const cliente = ag.clienteNome.split(' ')[0];
 
-      const link = `https://websalaov2.vercel.app/?id=${ag.id}`;
+      const link = `https://websalaov2.vercel.app/confirmacao?id=${ag.id}`;
 
       return `Olá, ${cliente}! 😊\n\nVocê tem um agendamento no *Studio Shelly Rodrigues*:\n\n✂️ *Serviço:* ${servico}\n📅 *Data:* ${data}\n⏰ *Horário:* ${hora}\n\nPara *confirmar* ou *cancelar* seu agendamento, acesse o link abaixo:\n👉 ${link}\n\nAguardamos você! 💛`;
     }
@@ -4134,7 +4134,38 @@
         const ci = State.data.clientes.findIndex(c => c.id === cliId);
         if (ci >= 0) State.data.clientes[ci].atendimentos++;
 
-        toast('Agendamento criado! Abra-o para enviar confirmação via WhatsApp.', 'success');
+        saveAll();
+        closeModal('modal-ag');
+        renderAgendaGrid();
+        if (document.getElementById('wpp-inbox-inner')) renderWppInboxCard();
+        updateWppBadge();
+
+        // Envia WhatsApp automaticamente ao criar agendamento
+        if (cli && cli.telefone) {
+          const phone = formatWppPhone(cli.telefone);
+          const msgWpp = buildWppMsg(novoAg);
+          const urlWpp = `https://wa.me/${phone}?text=${encodeURIComponent(msgWpp)}`;
+
+          // Marca como aguardando e registra na caixa de entrada
+          const idx = State.data.agendamentos.findIndex(a => a.id === novoAg.id);
+          if (idx >= 0) {
+            State.data.agendamentos[idx].wppEnviado = true;
+            State.data.agendamentos[idx].wppEnviadoEm = new Date().toISOString();
+            if (State.data.agendamentos[idx].status === 'pendente') {
+              State.data.agendamentos[idx].status = 'aguardando';
+            }
+          }
+          registrarMensagemEnviada(novoAg, cli);
+          saveAll();
+          updateWppBadge();
+          if (document.getElementById('wpp-inbox-inner')) renderWppInboxCard();
+
+          toast('✅ Agendamento criado! Abrindo WhatsApp para enviar confirmação...', 'success');
+          setTimeout(() => window.open(urlWpp, '_blank'), 400);
+        } else {
+          toast('⚠️ Agendamento criado! Cliente sem telefone — envie a confirmação manualmente.', 'info');
+        }
+        return;
       }
 
       saveAll();
