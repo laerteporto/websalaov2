@@ -2311,6 +2311,7 @@
     import { getFirestore, doc, getDoc, updateDoc }
                                    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
+    (async function() {
     var params = new URLSearchParams(window.location.search);
     var agId   = params.get('id');
     if (!agId) return; // não é link de confirmação, sai
@@ -2411,6 +2412,7 @@
       console.error(e);
       showError();
     }
+    })(); // fim IIFE async
   </script>
 
   <!-- SIDEBAR -->
@@ -2646,59 +2648,51 @@
     }
 
 
-    // ─── POLLING (Firebase — polling de status) ───────────────────────────────
-    function processarAtualizacaoAgendamentos(doFb) {
-      if (!doFb || doFb.length === 0) return;
-      const prev = State.data.agendamentos || [];
-
-      // Detecta mudanças de status para notificar
-      doFb.forEach(ag => {
-        const ant = prev.find(x => String(x.id) === String(ag.id));
-        if (ant && ant.status !== ag.status) {
-          if (ag.status === 'confirmado')
-            toast(`✅ ${(ag.clienteNome||'').split(' ')[0]} confirmou o agendamento!`, 'success');
-          else if (ag.status === 'cancelado')
-            toast(`❌ ${(ag.clienteNome||'').split(' ')[0]} cancelou o agendamento.`, 'error');
-          // Atualiza wppMensagens
-          if (State.data.wppMensagens) {
-            const mi = State.data.wppMensagens.findIndex(m => String(m.agId) === String(ag.id));
-            if (mi >= 0) {
-              State.data.wppMensagens[mi].resposta = ag.status === 'confirmado' ? 'sim' : 'nao';
-              State.data.wppMensagens[mi].respostaEm = ag.confirmadoEm || new Date().toISOString();
-              State.data.wppMensagens[mi].lida = false;
-              Storage.save('wppMensagens', State.data.wppMensagens);
-            }
-          }
-        }
-      });
-
-      // Firebase é fonte de verdade: substitui State com dados do Firebase
-      State.data.agendamentos = doFb;
-      Storage.save('agendamentos', doFb);
-      if (State.currentPage === 'agenda') renderAgendaGrid();
-      if (document.getElementById('wpp-inbox-inner')) renderWppInboxCard();
-      if (State.currentPage === 'whatsapp') renderWppConfig(document.getElementById('page-content'));
-      updateWppBadge();
-    }
-
+    // ─── LISTENERS TEMPO REAL ───────────────────────────────────────────────────
     function startPolling() {
       if (!window.FirebaseDB) return;
-      const { db, collection, onSnapshot, fbGetAll, fbBatchSet } = window.FirebaseDB;
+      const { db, collection, onSnapshot, fbGetAll } = window.FirebaseDB;
 
-      // onSnapshot: escuta mudancas de status no Firebase
+      // Listener agendamentos — atualiza tela quando Firebase muda
       onSnapshot(collection(db, 'agendamentos'), snap => {
         const doFb = snap.docs.map(d => {
           const dado = d.data();
           const numId = isNaN(d.id) ? dado.id : Number(d.id);
           return { ...dado, id: numId !== undefined ? numId : d.id };
         });
-        processarAtualizacaoAgendamentos(doFb);
-        const locais = State.data.agendamentos || [];
-        const faltam = locais.filter(l => !doFb.find(f => String(f.id) === String(l.id)));
-        if (faltam.length > 0) fbBatchSet('agendamentos', faltam).catch(() => {});
+        if (!doFb.length) return;
+
+        // Notifica se algum status mudou
+        const prev = State.data.agendamentos || [];
+        doFb.forEach(ag => {
+          const ant = prev.find(x => String(x.id) === String(ag.id));
+          if (ant && ant.status !== ag.status) {
+            if (ag.status === 'confirmado')
+              toast(`✅ ${(ag.clienteNome||'').split(' ')[0]} confirmou!`, 'success');
+            else if (ag.status === 'cancelado')
+              toast(`❌ ${(ag.clienteNome||'').split(' ')[0]} cancelou.`, 'error');
+            // Atualiza wppMensagens
+            if (State.data.wppMensagens) {
+              const mi = State.data.wppMensagens.findIndex(m => String(m.agId) === String(ag.id));
+              if (mi >= 0) {
+                State.data.wppMensagens[mi].resposta = ag.status === 'confirmado' ? 'sim' : 'nao';
+                State.data.wppMensagens[mi].respostaEm = ag.confirmadoEm || new Date().toISOString();
+                State.data.wppMensagens[mi].lida = false;
+                Storage.save('wppMensagens', State.data.wppMensagens);
+              }
+            }
+          }
+        });
+
+        // Atualiza State e tela
+        State.data.agendamentos = doFb;
+        Storage.save('agendamentos', doFb);
+        if (State.currentPage === 'agenda') renderAgendaGrid();
+        if (document.getElementById('wpp-inbox-inner')) renderWppInboxCard();
+        updateWppBadge();
       });
 
-      // onSnapshot wppMensagens
+      // Listener wppMensagens
       onSnapshot(collection(db, 'wppMensagens'), snap => {
         const novas = snap.docs.map(d => {
           const data = d.data();
@@ -2715,9 +2709,25 @@
         if (State.currentPage === 'whatsapp') renderWppConfig(document.getElementById('page-content'));
       });
 
-      // Polling a cada 10s como seguranca adicional
+      // Polling a cada 10s como segurança
       setInterval(async () => {
-        try { const doFb = await fbGetAll('agendamentos'); processarAtualizacaoAgendamentos(doFb); } catch(e) {}
+        try {
+          const doFb = await fbGetAll('agendamentos');
+          if (!doFb.length) return;
+          const prev = State.data.agendamentos || [];
+          let mudou = false;
+          doFb.forEach(ag => {
+            const ant = prev.find(x => String(x.id) === String(ag.id));
+            if (ant && ant.status !== ag.status) mudou = true;
+          });
+          if (mudou) {
+            State.data.agendamentos = doFb;
+            Storage.save('agendamentos', doFb);
+            if (State.currentPage === 'agenda') renderAgendaGrid();
+            if (document.getElementById('wpp-inbox-inner')) renderWppInboxCard();
+            updateWppBadge();
+          }
+        } catch(e) {}
       }, 10000);
     }
     // ─── SYNC (no-ops — Firebase cuida) ─────────────────────────────────────────
@@ -3015,24 +3025,70 @@
         if (State.currentPage === 'agenda') renderAgendaGrid();
       });
 
-      // Firebase em background
+      // Firebase — carrega dados e inicia listeners
       (async () => {
         try {
-          const temFb = await Promise.race([
-            loadFromFirebase(),
-            new Promise(r => setTimeout(() => r(false), 8000))
-          ]);
-          if (temFb) {
-            navigate(State.currentPage);
-            updateWppBadge();
-            console.log('[Firebase] ✓ Dados carregados');
-          } else if (_fbReady && window.FirebaseDB) {
-            saveAll();
-            console.log('[Firebase] Seed salvo');
+          // Espera Firebase ficar pronto (max 8s)
+          await new Promise(resolve => {
+            if (_fbReady && window.FirebaseDB) { resolve(); return; }
+            const t = setTimeout(resolve, 8000);
+            window.addEventListener('firebase-ready', () => { clearTimeout(t); resolve(); }, { once: true });
+          });
+
+          if (!window.FirebaseDB) {
+            console.warn('[Firebase] Não disponível, usando localStorage');
+            startPolling();
+            return;
           }
+
+          const { fbGetAll, fbBatchSet } = window.FirebaseDB;
+
+          // Carrega TUDO do Firebase diretamente
+          console.log('[Firebase] Carregando dados...');
+          const [agFb, cliFb, svcFb, finFb, wppFb] = await Promise.all([
+            fbGetAll('agendamentos'),
+            fbGetAll('clientes'),
+            fbGetAll('servicos'),
+            fbGetAll('financeiro'),
+            fbGetAll('wppMensagens')
+          ]);
+
+          console.log('[Firebase] agendamentos:', agFb.length, '| wppMensagens:', wppFb.length);
+
+          if (agFb.length > 0) {
+            State.data.agendamentos = agFb;
+            Storage.save('agendamentos', agFb);
+          } else {
+            // Firebase vazio: sobe os do localStorage
+            const locais = Storage.load('agendamentos') || [];
+            if (locais.length > 0) {
+              console.log('[Firebase] Subindo', locais.length, 'agendamentos locais...');
+              await fbBatchSet('agendamentos', locais);
+              State.data.agendamentos = locais;
+            }
+          }
+
+          if (cliFb.length > 0) { State.data.clientes = cliFb; Storage.save('clientes', cliFb); }
+          if (svcFb.length > 0) { State.data.servicos = svcFb; Storage.save('servicos', svcFb); }
+          if (finFb.length > 0) { State.data.financeiro = finFb; Storage.save('financeiro', finFb); }
+
+          // wppMensagens: merge Firebase + local
+          const wppLocal = Storage.load('wppMensagens') || [];
+          const wppMerge = [...wppFb];
+          wppLocal.forEach(l => { if (!wppMerge.find(n => String(n.id) === String(l.id))) wppMerge.push(l); });
+          State.data.wppMensagens = wppMerge;
+          Storage.save('wppMensagens', wppMerge);
+
+          // Re-renderiza com dados do Firebase
+          navigate(State.currentPage);
+          updateWppBadge();
+          console.log('[Firebase] ✓ Dados carregados com sucesso');
+
+          // Inicia listeners para atualizações em tempo real
           startPolling();
+
         } catch (e) {
-          console.warn('[Init Firebase]', e.message);
+          console.warn('[Firebase] Erro ao carregar:', e.message);
           startPolling();
         }
       })();
