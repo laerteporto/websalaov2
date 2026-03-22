@@ -2392,11 +2392,12 @@
 
     <div id="login-box">
       <div class="login-tabs">
-        <div class="login-tab active">🔑 Entrar</div>
-        <div class="login-tab" onclick="alert('Para recuperar a senha, solicite ao administrador.')">🔐 Recuperar Senha
-        </div>
+        <div class="login-tab active" id="tab-entrar" onclick="showLoginTab('entrar')">🔑 Entrar</div>
+        <div class="login-tab" id="tab-recuperar" onclick="showLoginTab('recuperar')">🔐 Recuperar Senha</div>
       </div>
-      <div class="login-form">
+
+      <!-- ABA 1: ENTRAR -->
+      <div class="login-form" id="form-entrar">
         <div class="login-form-title">Acesso ao Sistema</div>
         <div class="login-field">
           <label class="login-label">Usuário</label>
@@ -2418,15 +2419,51 @@
 
         <div class="login-divider">ou</div>
 
-        <button class="login-btn-outline" onclick="alert('Recurso em desenvolvimento')">Esqueci minha senha</button>
+        <button class="login-btn-outline" onclick="showLoginTab('recuperar')">Esqueci minha senha</button>
 
         <div class="login-badge">Autenticação protegida com PBKDF2 + SHA-256</div>
+      </div>
+
+      <!-- ABA 2: RECUPERAR SENHA -->
+      <div class="login-form" id="form-recuperar" style="display:none;">
+        <div class="login-form-title">Redefinir / Criar Senha</div>
+        <div class="login-field">
+          <label class="login-label">Usuário (Alvo)</label>
+          <div class="login-input-wrap">
+            <span class="login-input-icon">👤</span>
+            <input type="text" id="rec-user" class="login-input" placeholder="Nome do usuário" />
+          </div>
+        </div>
+        <div class="login-field">
+          <label class="login-label">Chave Mestra (Admin)</label>
+          <div class="login-input-wrap">
+            <span class="login-input-icon">🗝️</span>
+            <input type="password" id="rec-key" class="login-input" placeholder="Senha do Salão" />
+          </div>
+        </div>
+        <div class="login-field">
+          <label class="login-label">Nova Senha</label>
+          <div class="login-input-wrap">
+            <span class="login-input-icon">🔒</span>
+            <input type="password" id="rec-pass" class="login-input" placeholder="Digite a nova senha" />
+          </div>
+        </div>
+        <button class="login-btn" id="btn-login-recuperar" onclick="execRecover()">🔄 Aplicar Nova Senha</button>
+        <button class="login-btn-outline" style="margin-top:12px; border:none;" onclick="showLoginTab('entrar')">Voltar
+          para Login</button>
       </div>
     </div>
 
     <div class="login-footer">Studio Shelly Rodrigues · <b>Sistema interno</b> · Acesso restrito</div>
 
     <script>
+      function showLoginTab(tab) {
+        document.getElementById('tab-entrar').className = 'login-tab' + (tab === 'entrar' ? ' active' : '');
+        document.getElementById('tab-recuperar').className = 'login-tab' + (tab === 'recuperar' ? ' active' : '');
+        document.getElementById('form-entrar').style.display = tab === 'entrar' ? 'flex' : 'none';
+        document.getElementById('form-recuperar').style.display = tab === 'recuperar' ? 'flex' : 'none';
+      }
+
       async function hashPBKDF2(password, salt) {
         const enc = new TextEncoder();
         const keyMaterial = await crypto.subtle.importKey(
@@ -2490,6 +2527,41 @@
         }
         btn.textContent = '🔑 Entrar';
         btn.disabled = false;
+      }
+
+      async function execRecover() {
+        const user = document.getElementById('rec-user').value.toLowerCase().trim();
+        const key = document.getElementById('rec-key').value.trim();
+        const pass = document.getElementById('rec-pass').value.trim();
+
+        if (!user || !key || !pass) { alert("Preencha todos os campos!"); return; }
+        if (key !== "Studio2026") { alert("A Chave Mestra está errada. Consulte o Administrador."); return; }
+
+        const btn = document.getElementById('btn-login-recuperar');
+        btn.textContent = 'Processando...'; btn.disabled = true;
+
+        try {
+          if (!window.FirebaseDB || !window.FirebaseDB.getDoc) throw new Error("Aguardando carregamento de sistema...");
+          const { getDoc, setDoc, doc, db } = window.FirebaseDB;
+          const uDoc = await getDoc(doc(db, 'usuarios', user));
+
+          let salt = "salsa_" + user + "_2026";
+          let existia = false;
+          if (uDoc.exists()) {
+            salt = uDoc.data().salt || salt;
+            existia = true;
+          }
+
+          const hash = await hashPBKDF2(pass, salt);
+          await setDoc(doc(db, 'usuarios', user), { hash, salt }, { merge: true });
+
+          alert(existia ? 'Senha do usuário alterada com sucesso!' : 'Novo usuário criado com sucesso!');
+          showLoginTab('entrar');
+        } catch (e) {
+          console.error(e);
+          alert(e.message);
+        }
+        btn.textContent = '🔄 Aplicar Nova Senha'; btn.disabled = false;
       }
     </script>
   </div>
