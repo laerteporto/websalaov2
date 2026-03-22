@@ -2144,6 +2144,357 @@
 <body>
 
   <!-- ========================================================
+       TELA DE LOGIN DO SISTEMA (PBKDF2)
+       Inspirada no mockup fornecido. Bloqueia o acesso sem auth.
+  ======================================================== -->
+  <div id="login-overlay" style="display:none;">
+    <style>
+      #login-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 999999;
+        background: var(--bg);
+        display: flex;
+        flex-direction: column;
+        font-family: 'Jost', sans-serif;
+      }
+
+      #login-header {
+        background: linear-gradient(135deg, #c1752b 0%, #a85810 100%);
+        padding: 50px 20px 60px;
+        text-align: center;
+        color: #fff;
+        border-bottom-left-radius: 40px;
+        border-bottom-right-radius: 40px;
+      }
+
+      .login-title-text {
+        font-family: 'Cormorant Garamond', Georgia, serif;
+        font-size: 38px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        margin-bottom: 2px;
+      }
+
+      .login-subtitle {
+        font-size: 14px;
+        font-weight: 300;
+        letter-spacing: 0.5px;
+        opacity: 0.9;
+      }
+
+      #login-box {
+        background: var(--bg-card);
+        border-radius: 12px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
+        width: 90%;
+        max-width: 420px;
+        margin: -40px auto 40px;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid var(--border-soft);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .login-tabs {
+        display: flex;
+        border-bottom: 1px solid var(--border-soft);
+        background: var(--bg-card2);
+      }
+
+      .login-tab {
+        flex: 1;
+        text-align: center;
+        padding: 18px;
+        font-weight: 600;
+        font-size: 15px;
+        color: var(--text-soft);
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .login-tab.active {
+        color: #c1752b;
+        border-bottom: 3px solid #c1752b;
+        background: var(--bg-card);
+      }
+
+      .login-form {
+        padding: 32px 28px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .login-form-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 28px;
+        width: 100%;
+      }
+
+      .login-field {
+        margin-bottom: 20px;
+        width: 100%;
+      }
+
+      .login-label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+      }
+
+      .login-input-wrap {
+        position: relative;
+        width: 100%;
+      }
+
+      .login-input-icon {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 16px;
+        color: #c1752b;
+      }
+
+      .login-input {
+        width: 100%;
+        padding: 14px 14px 14px 44px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--bg-input);
+        color: var(--text);
+        font-family: 'Jost', sans-serif;
+        font-size: 15px;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+
+      .login-input:focus {
+        border-color: #c1752b;
+      }
+
+      .login-btn {
+        width: 100%;
+        padding: 16px;
+        background: linear-gradient(135deg, #c1752b, #e0832a);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        font-family: 'Jost', sans-serif;
+        transition: all 0.2s;
+        box-shadow: 0 6px 20px rgba(193, 117, 43, 0.25);
+        margin-top: 10px;
+      }
+
+      .login-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(193, 117, 43, 0.4);
+      }
+
+      .login-divider {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        margin: 28px 0;
+        color: var(--text-muted);
+        font-size: 13px;
+        width: 100%;
+      }
+
+      .login-divider::before,
+      .login-divider::after {
+        content: '';
+        flex: 1;
+        border-bottom: 1px solid var(--border-soft);
+      }
+
+      .login-divider::before {
+        margin-right: 1em;
+      }
+
+      .login-divider::after {
+        margin-left: 1em;
+      }
+
+      .login-btn-outline {
+        width: 100%;
+        padding: 16px;
+        background: transparent;
+        color: #c1752b;
+        border: 2px solid #c1752b;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Jost', sans-serif;
+        transition: all 0.2s;
+      }
+
+      .login-btn-outline:hover {
+        background: rgba(193, 117, 43, 0.05);
+      }
+
+      .login-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #fff;
+        background: #e0603f;
+        padding: 6px 12px;
+        border-radius: 6px;
+        margin-top: 24px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .login-badge::before {
+        content: '';
+        width: 8px;
+        height: 8px;
+        background: #50c878;
+        border-radius: 50%;
+        box-shadow: 0 0 8px rgba(80, 200, 120, 0.8);
+      }
+
+      .login-footer {
+        margin-top: auto;
+        padding: 20px;
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 13px;
+        font-weight: 500;
+      }
+
+      [data-theme="dark"] #login-header {
+        background: linear-gradient(135deg, #101010 0%, #1a1a1a 100%);
+        border-bottom: 1px solid var(--gold);
+      }
+    </style>
+
+    <div id="login-header">
+      <div class="login-title-text">STUDIO SHELLY</div>
+      <div class="login-subtitle">Sistema de Gestão de Salão</div>
+    </div>
+
+    <div id="login-box">
+      <div class="login-tabs">
+        <div class="login-tab active">🔑 Entrar</div>
+        <div class="login-tab" onclick="alert('Para recuperar a senha, solicite ao administrador.')">🔐 Recuperar Senha
+        </div>
+      </div>
+      <div class="login-form">
+        <div class="login-form-title">Acesso ao Sistema</div>
+        <div class="login-field">
+          <label class="login-label">Usuário</label>
+          <div class="login-input-wrap">
+            <span class="login-input-icon">👤</span>
+            <input type="text" id="login-user" class="login-input" placeholder="Digite seu usuário" />
+          </div>
+        </div>
+        <div class="login-field">
+          <label class="login-label">Senha</label>
+          <div class="login-input-wrap">
+            <span class="login-input-icon">🔒</span>
+            <input type="password" id="login-pass" class="login-input" placeholder="Digite sua senha"
+              onkeypress="if(event.key==='Enter') execLogin()" />
+          </div>
+        </div>
+
+        <button class="login-btn" id="btn-login-entrar" onclick="execLogin()">🔑 Entrar</button>
+
+        <div class="login-divider">ou</div>
+
+        <button class="login-btn-outline" onclick="alert('Recurso em desenvolvimento')">Esqueci minha senha</button>
+
+        <div class="login-badge">Autenticação protegida com PBKDF2 + SHA-256</div>
+      </div>
+    </div>
+
+    <div class="login-footer">Studio Shelly Rodrigues · <b>Sistema interno</b> · Acesso restrito</div>
+
+    <script>
+      async function hashPBKDF2(password, salt) {
+        const enc = new TextEncoder();
+        const keyMaterial = await crypto.subtle.importKey(
+          "raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveBits", "deriveKey"]
+        );
+        const saltBuf = enc.encode(salt);
+        const hashBuffer = await crypto.subtle.deriveBits(
+          { name: "PBKDF2", salt: saltBuf, iterations: 100000, hash: "SHA-256" },
+          keyMaterial,
+          256
+        );
+        return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+      }
+
+      async function execLogin() {
+        const user = document.getElementById('login-user').value.trim();
+        const pass = document.getElementById('login-pass').value.trim();
+        if (!user || !pass) { alert("Preencha usuário e senha"); return; }
+
+        const btn = document.getElementById('btn-login-entrar');
+        btn.textContent = 'Autenticando...';
+        btn.disabled = true;
+
+        try {
+          if (!window.FirebaseDB || !window.FirebaseDB.getDoc) {
+            throw new Error("Aguardando carregamento do Firestore. Tente em instantes.");
+          }
+          const { getDoc, setDoc, doc, db } = window.FirebaseDB;
+
+          // Auto-provisionamento (para initial bootstrap: se "laerte"/"laerte123" ou "shelly"/"shelly123")
+          if ((user === 'laerte' && pass === 'laerte123') || (user === 'shelly' && pass === 'shelly123')) {
+            const checkDoc = await getDoc(doc(db, 'usuarios', user));
+            if (!checkDoc.exists()) {
+              const salt = "salsa_" + user + "_2026";
+              const hash = await hashPBKDF2(pass, salt);
+              await setDoc(doc(db, 'usuarios', user), { hash, salt });
+              console.log("Usuário provisionado silenciosamente.");
+            }
+          }
+
+          const uDoc = await getDoc(doc(db, 'usuarios', user));
+          if (!uDoc.exists()) {
+            alert('Usuário não encontrado ou credenciais incorretas.');
+            btn.textContent = '🔑 Entrar'; btn.disabled = false;
+            return;
+          }
+
+          const bData = uDoc.data();
+          const inputHash = await hashPBKDF2(pass, bData.salt);
+
+          if (inputHash === bData.hash) {
+            // Sucesso!
+            sessionStorage.setItem('auth_user', user);
+            document.getElementById('login-overlay').style.display = 'none';
+          } else {
+            alert('Usuário ou senha incorretos.');
+          }
+        } catch (e) {
+          console.error(e);
+          alert(e.message);
+        }
+        btn.textContent = '🔑 Entrar';
+        btn.disabled = false;
+      }
+    </script>
+  </div>
+
+  <!-- ========================================================
        TELA DE CONFIRMAÇÃO DE AGENDAMENTO (cliente externo)
        Exibida quando a URL contém ?id=  (link do WhatsApp)
   ======================================================== -->
@@ -2687,8 +3038,12 @@
       </div>
     </nav>
 
-    <div class="sidebar-footer">
-      <div class="sidebar-time">
+    <div class="sidebar-footer" style="display:flex; flex-direction:column; gap:12px;">
+      <button class="btn btn-outline btn-sm" style="width:100%; border-color:#e0603f; color:#e0603f;"
+        onclick="sessionStorage.removeItem('auth_user'); window.location.reload();">
+        Sair / Logout
+      </button>
+      <div class="sidebar-time" style="justify-content:center;">
         <span class="time" id="sidebar-clock">--:--</span>
         <span>Goiânia, GO</span>
       </div>
@@ -3230,6 +3585,14 @@
 
     // ─── INIT ─────────────────────────────────────────────────────────────────────// ─── INIT ────────────────────────────────────────────────────────────────────
     window.addEventListener('DOMContentLoaded', async () => {
+      // Bloqueio Inicial
+      var params = new URLSearchParams(window.location.search);
+      if (params.get('id')) return; // Visitante (tela de confirmacao externa)
+
+      if (!sessionStorage.getItem('auth_user')) {
+        document.getElementById('login-overlay').style.display = 'flex';
+      }
+
       initTheme();
       loadData();
       updateClock();
