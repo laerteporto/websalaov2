@@ -3799,17 +3799,15 @@
       </div>
       <div id="agenda-grid-wrap"></div>
 
-      <div class="grid-2 mt-20">
-        <div class="card">
-          <div class="card-header"><div class="card-title">Legenda</div></div>
-          <div class="flex gap-12" style="flex-wrap:wrap;">
-            <span class="badge badge-green">✓ Confirmado</span>
-            <span class="badge badge-gold">⏳ Pendente</span>
-            <span class="badge badge-wpp">📱 WhatsApp</span>
-            <span class="badge badge-red">✕ Cancelado</span>
-          </div>
-        </div>
-        <div class="card" id="wpp-inbox-card">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0 12px 0;">
+        <span style="font-size:11px;color:var(--text-muted);font-weight:600;letter-spacing:0.05em;">LEGENDA:</span>
+        <span class="badge badge-green">✓ Confirmado</span>
+        <span class="badge badge-gold">⏳ Pendente</span>
+        <span class="badge badge-wpp">📱 WhatsApp</span>
+        <span class="badge badge-red">✕ Cancelado</span>
+      </div>
+
+      <div class="card" id="wpp-inbox-card" style="margin-top:0;">
           <div class="card-header">
             <div>
               <div class="card-title" style="display:flex;align-items:center;gap:8px;">
@@ -3840,7 +3838,6 @@
           </div>
           <div id="wpp-inbox-inner"></div>
         </div>
-      </div>
     </div>
   `;
       renderAgendaGrid();
@@ -3872,8 +3869,9 @@
     </div>`;
       }
 
+      const _limite = window._wppInboxLimite || 8;
       html += `<div class="wpp-inbox">`;
-      msgs.slice(0, 8).forEach(m => {
+      msgs.slice(0, _limite).forEach(m => {
         const agendamento = State.data.agendamentos.find(a => a.id === m.agId);
         const statusAg = agendamento?.status || 'pendente';
         let tagHtml = '';
@@ -3911,8 +3909,21 @@
       });
       html += `</div>`;
 
-      if (msgs.length > 8) {
-        html += `<div style="padding:10px 16px;text-align:center;font-size:12px;color:var(--text-muted);">+${msgs.length - 8} mensagens anteriores</div>`;
+      const _lim = window._wppInboxLimite || 8;
+      if (msgs.length > _lim) {
+        html += `<button onclick="window._wppInboxLimite=(_lim+16);renderWppInboxCard();"
+          style="width:100%;padding:12px;background:rgba(255,255,255,0.03);border:1px dashed var(--border);
+          border-radius:0 0 var(--radius) var(--radius);color:var(--text-muted);font-size:13px;cursor:pointer;
+          transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.07)'"
+          onmouseout="this.style.background='rgba(255,255,255,0.03)'">
+          ↓ Ver mais ${msgs.length - _lim} mensagens
+        </button>`;
+      } else if ((window._wppInboxLimite||8) > 8) {
+        html += `<button onclick="window._wppInboxLimite=8;renderWppInboxCard();"
+          style="width:100%;padding:10px;background:transparent;border:none;
+          color:var(--text-muted);font-size:12px;cursor:pointer;">
+          ↑ Recolher
+        </button>`;
       }
 
       el.innerHTML = html;
