@@ -2668,10 +2668,18 @@
           const numId = isNaN(d.id) ? data.id : Number(d.id);
           return { ...data, id: numId !== undefined ? numId : d.id };
         });
-        State.data.wppMensagens = novas;
-        Storage.save('wppMensagens', novas);
+        // Merge: preserva mensagens locais que ainda não foram salvas no Firebase
+        const locais = State.data.wppMensagens || [];
+        const merged = [...novas];
+        locais.forEach(local => {
+          const jaExiste = novas.find(n => String(n.id) === String(local.id) || String(n.agId) === String(local.agId));
+          if (!jaExiste) merged.push(local); // mantém mensagem local ainda não sincronizada
+        });
+        State.data.wppMensagens = merged;
+        Storage.save('wppMensagens', merged);
         updateWppBadge();
         if (document.getElementById('wpp-inbox-inner')) renderWppInboxCard();
+        if (State.currentPage === 'whatsapp') renderWppConfig(document.getElementById('page-content'));
       });
 
       // 2) onSnapshot para agendamentos
@@ -2689,8 +2697,23 @@
       setInterval(async () => {
         try {
           const { fbGetAll } = window.FirebaseDB;
-          const novos = await fbGetAll('agendamentos');
-          processarAtualizacaoAgendamentos(novos);
+          const [novosAg, novasMsgs] = await Promise.all([
+            fbGetAll('agendamentos'),
+            fbGetAll('wppMensagens')
+          ]);
+          processarAtualizacaoAgendamentos(novosAg);
+          // Atualiza wppMensagens mantendo itens locais não sincronizados
+          const locais = State.data.wppMensagens || [];
+          const merged = [...novasMsgs];
+          locais.forEach(local => {
+            const jaExiste = novasMsgs.find(n => String(n.id) === String(local.id) || String(n.agId) === String(local.agId));
+            if (!jaExiste) merged.push(local);
+          });
+          State.data.wppMensagens = merged;
+          Storage.save('wppMensagens', merged);
+          updateWppBadge();
+          if (document.getElementById('wpp-inbox-inner')) renderWppInboxCard();
+          if (State.currentPage === 'whatsapp') renderWppConfig(document.getElementById('page-content'));
         } catch(e) { /* silencioso */ }
       }, 15000);
     }
@@ -4197,9 +4220,10 @@
             }
           }
           registrarMensagemEnviada(novoAg, cli);
-          saveAll();
+          saveAll(); // salva wppMensagens no Firebase APÓS registrar
           updateWppBadge();
           if (document.getElementById('wpp-inbox-inner')) renderWppInboxCard();
+          if (State.currentPage === 'whatsapp') renderWppConfig(document.getElementById('page-content'));
 
           toast('✅ Agendamento criado! Abrindo WhatsApp para enviar confirmação...', 'success');
           setTimeout(() => window.open(urlWpp, '_blank'), 400);
