@@ -2652,24 +2652,31 @@
       });
       onSnapshot(collection(db, 'agendamentos'), snap => {
         const novos = snap.docs.map(d => {
-          const data = d.data();
-          const numId = isNaN(d.id) ? data.id : Number(d.id);
-          return { ...data, id: numId !== undefined ? numId : d.id };
+          const dado = d.data();
+          const numId = isNaN(d.id) ? dado.id : Number(d.id);
+          return { ...dado, id: numId !== undefined ? numId : d.id };
         });
 
-        // Detecta confirmação/cancelamento feito pelo cliente via link
+        // Detecta mudanças de status vindas do Firebase (ex: cliente confirmou pelo link)
         const prev = State.data.agendamentos || [];
+        let houveMudanca = false;
         novos.forEach(ag => {
-          const p = prev.find(x => x.id === ag.id);
-          if (p && p.status !== ag.status && ag.confirmadoPeloCliente) {
-            if (ag.status === 'confirmado') {
-              toast(`✅ ${(ag.clienteNome || '').split(' ')[0]} confirmou o agendamento!`, 'success');
-            } else if (ag.status === 'cancelado') {
-              toast(`❌ ${(ag.clienteNome || '').split(' ')[0]} cancelou o agendamento.`, 'error');
+          const p = prev.find(x => String(x.id) === String(ag.id));
+          if (p && p.status !== ag.status) {
+            houveMudanca = true;
+            // Notifica apenas se foi o cliente quem confirmou (via link)
+            if (ag.confirmadoPeloCliente) {
+              if (ag.status === 'confirmado') {
+                toast(`✅ ${(ag.clienteNome || '').split(' ')[0]} confirmou o agendamento!`, 'success');
+              } else if (ag.status === 'cancelado') {
+                toast(`❌ ${(ag.clienteNome || '').split(' ')[0]} cancelou o agendamento.`, 'error');
+              }
             }
-            // Atualiza wppMensagens para refletir a resposta do cliente
+            // Sincroniza wppMensagens com o novo status
             if (State.data.wppMensagens) {
-              const mi = State.data.wppMensagens.findIndex(m => m.agId === ag.id);
+              const mi = State.data.wppMensagens.findIndex(
+                m => String(m.agId) === String(ag.id)
+              );
               if (mi >= 0) {
                 State.data.wppMensagens[mi].resposta = ag.status === 'confirmado' ? 'sim' : 'nao';
                 State.data.wppMensagens[mi].respostaEm = ag.confirmadoEm || new Date().toISOString();
@@ -2682,6 +2689,7 @@
 
         State.data.agendamentos = novos;
         Storage.save('agendamentos', novos);
+        // Sempre re-renderiza a agenda ao receber atualização do Firebase
         if (State.currentPage === 'agenda') renderAgendaGrid();
         if (document.getElementById('wpp-inbox-inner')) renderWppInboxCard();
         updateWppBadge();
