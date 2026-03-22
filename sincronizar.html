@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Sincronizar Dados — websalaov2</title>
+<style>
+  body { font-family: monospace; background: #111; color: #eee; padding: 20px; max-width: 900px; margin: 0 auto; }
+  h2 { color: #f0d070; }
+  .ok { color: #22c55e; } .err { color: #ef4444; } .warn { color: #f0d070; }
+  pre { background: #1a1a1a; padding: 12px; border-radius: 8px; overflow: auto; font-size: 13px; max-height: 400px; overflow-y: auto; }
+  button { background: #c9a84c; color: #000; border: none; padding: 10px 22px; border-radius: 6px; cursor: pointer; margin: 6px 4px; font-weight: bold; font-size: 14px; }
+  button.verde { background: #22c55e; }
+  button.vermelho { background: #ef4444; color: #fff; }
+  .card { background: #1a1a1a; border: 1px solid #333; border-radius: 10px; padding: 16px; margin: 12px 0; }
+  .big { font-size: 28px; font-weight: bold; color: #f0d070; }
+</style>
+</head>
+<body>
+<h2>🔧 Sincronização de Dados — websalaov2</h2>
+<p class="warn">⚠️ Abra esta página no MESMO browser onde usa o sistema (para ter acesso ao localStorage)</p>
+
+<div class="card">
+  <div id="resumo">Carregando dados locais...</div>
+</div>
+
+<button onclick="verificar()">🔍 Verificar Dados</button>
+<button class="verde" onclick="sincronizar()">⬆️ Sincronizar localStorage → Firebase</button>
+<button onclick="limparStatus()">🔄 Corrigir Status (buscar do Firebase)</button>
+
+<h3>Log:</h3>
+<pre id="log"></pre>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, getDocs, writeBatch, doc, getDoc }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const cfg = {
+    apiKey: "AIzaSyBQcTGkiastpRAjGthU9nHy_uqpQjUMdu0",
+    authDomain: "websalao-2a9d1.firebaseapp.com",
+    projectId: "websalao-2a9d1",
+    storageBucket: "websalao-2a9d1.firebasestorage.app",
+    messagingSenderId: "731611795568",
+    appId: "1:731611795568:web:103e44f116e152961024b5"
+  };
+
+  const app = initializeApp(cfg);
+  const db  = getFirestore(app);
+
+  function log(msg, tipo = '') {
+    const el = document.getElementById('log');
+    const ts = new Date().toLocaleTimeString('pt-BR');
+    const cor = tipo === 'ok' ? '#22c55e' : tipo === 'err' ? '#ef4444' : tipo === 'warn' ? '#f0d070' : '#eee';
+    el.innerHTML += `<span style="color:${cor}">[${ts}] ${msg}</span>\n`;
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function getLocal(key) {
+    try { return JSON.parse(localStorage.getItem(key)) || []; } catch { return []; }
+  }
+
+  async function batchSet(col, items) {
+    for (let i = 0; i < items.length; i += 499) {
+      const chunk = items.slice(i, i + 499);
+      const batch = writeBatch(db);
+      chunk.forEach(item => batch.set(doc(db, col, String(item.id)), item, { merge: true }));
+      await batch.commit();
+    }
+  }
+
+  window.verificar = async function() {
+    const ag  = getLocal('agendamentos');
+    const wpp = getLocal('wppMensagens');
+    const cli = getLocal('clientes');
+    const svc = getLocal('servicos');
+
+    log(`localStorage: ${ag.length} agendamentos, ${wpp.length} wppMensagens, ${cli.length} clientes, ${svc.length} serviços`);
+
+    const snapAg  = await getDocs(collection(db, 'agendamentos'));
+    const snapWpp = await getDocs(collection(db, 'wppMensagens'));
+    log(`Firebase: ${snapAg.docs.length} agendamentos, ${snapWpp.docs.length} wppMensagens`, 'ok');
+
+    const faltamAg = ag.filter(l => !snapAg.docs.find(d => String(d.id) === String(l.id)));
+    log(`Agendamentos que estão APENAS no localStorage (faltam no Firebase): ${faltamAg.length}`, faltamAg.length > 0 ? 'warn' : 'ok');
+
+    // Mostrar status no Firebase vs localStorage
+    snapAg.docs.forEach(d => {
+      const fb = d.data();
+      const local = ag.find(a => String(a.id) === String(d.id));
+      if (local && local.status !== fb.status) {
+        log(`  ID ${d.id}: Firebase status="${fb.status}" | local status="${local.status}" → Firebase tem o status correto!`, 'warn');
+      }
+    });
+
+    document.getElementById('resumo').innerHTML = `
+      <span class="big">${ag.length}</span> agendamentos no localStorage &nbsp;|&nbsp;
+      <span class="big">${snapAg.docs.length}</span> no Firebase &nbsp;|&nbsp;
+      <span class="big" style="color:${faltamAg.length>0?'#ef4444':'#22c55e'}">${faltamAg.length}</span> faltando no Firebase
+    `;
+  };
+
+  window.sincronizar = async function() {
+    log('Iniciando sincronização localStorage → Firebase...', 'warn');
+    const ag  = getLocal('agendamentos');
+    const wpp = getLocal('wppMensagens');
+    const cli = getLocal('clientes');
+    const svc = getLocal('servicos');
+    const fin = getLocal('financeiro');
+
+    try {
+      log(`Enviando ${ag.length} agendamentos...`);
+      await batchSet('agendamentos', ag);
+      log(`✅ ${ag.length} agendamentos sincronizados`, 'ok');
+
+      log(`Enviando ${wpp.length} wppMensagens...`);
+      await batchSet('wppMensagens', wpp);
+      log(`✅ ${wpp.length} wppMensagens sincronizadas`, 'ok');
+
+      log(`Enviando ${cli.length} clientes...`);
+      await batchSet('clientes', cli);
+      log(`✅ ${cli.length} clientes sincronizados`, 'ok');
+
+      log(`Enviando ${svc.length} serviços...`);
+      await batchSet('servicos', svc);
+      log(`✅ ${svc.length} serviços sincronizados`, 'ok');
+
+      log('🎉 SINCRONIZAÇÃO COMPLETA! Agora reabra o sistema.', 'ok');
+      await window.verificar();
+    } catch(e) {
+      log('ERRO: ' + e.message, 'err');
+    }
+  };
+
+  window.limparStatus = async function() {
+    log('Buscando status correto do Firebase e aplicando no localStorage...', 'warn');
+    const snap = await getDocs(collection(db, 'agendamentos'));
+    const ag = getLocal('agendamentos');
+    let atualizados = 0;
+    snap.docs.forEach(d => {
+      const fb = d.data();
+      const idx = ag.findIndex(a => String(a.id) === String(d.id));
+      if (idx >= 0 && ag[idx].status !== fb.status) {
+        log(`  ID ${d.id} (${ag[idx].clienteNome}): ${ag[idx].status} → ${fb.status}`, 'warn');
+        ag[idx].status = fb.status;
+        if (fb.confirmadoEm) ag[idx].confirmadoEm = fb.confirmadoEm;
+        if (fb.confirmadoPeloCliente) ag[idx].confirmadoPeloCliente = fb.confirmadoPeloCliente;
+        atualizados++;
+      }
+    });
+    localStorage.setItem('agendamentos', JSON.stringify(ag));
+    log(`✅ ${atualizados} agendamentos atualizados no localStorage`, 'ok');
+    log('Reabra o sistema para ver as mudanças.', 'warn');
+  };
+
+  // Auto-verificar ao abrir
+  setTimeout(window.verificar, 800);
+</script>
+</body>
+</html>
