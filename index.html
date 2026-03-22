@@ -1210,6 +1210,20 @@
       margin-top: 4px;
     }
 
+    .agenda-bottom-section {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 20px;
+      align-items: start;
+      margin-top: 24px;
+    }
+
+    @media (max-width: 768px) {
+      .agenda-bottom-section {
+        grid-template-columns: 1fr;
+      }
+    }
+
     /* ─── RESPONSIVE ─── */
     @media (max-width: 1100px) {
       .kpi-grid {
@@ -2138,78 +2152,288 @@
     align-items:center; justify-content:center; padding:24px 16px; min-height:100dvh;">
 
     <style>
-      #confirmacao-overlay * { box-sizing: border-box; }
+      #confirmacao-overlay * {
+        box-sizing: border-box;
+      }
+
       #conf-card {
-        background:#1a1a1a; border:1px solid #2e2e2e; border-radius:16px;
-        width:100%; max-width:420px; overflow:hidden;
-        box-shadow:0 8px 40px rgba(0,0,0,0.6); margin:auto;
+        background: #1a1a1a;
+        border: 1px solid #2e2e2e;
+        border-radius: 16px;
+        width: 100%;
+        max-width: 420px;
+        overflow: hidden;
+        box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
+        margin: auto;
       }
+
       #conf-header {
-        background:linear-gradient(135deg,#1a1400,#2a1f00);
-        border-bottom:1px solid #B8916A;
-        padding:28px 24px 22px; text-align:center;
+        background: linear-gradient(135deg, #1a1400, #2a1f00);
+        border-bottom: 1px solid #B8916A;
+        padding: 28px 24px 22px;
+        text-align: center;
       }
-      #conf-header .c-logo { font-size:40px; margin-bottom:8px; }
-      #conf-header .c-name { font-size:18px; font-weight:700; color:#B8916A; }
-      #conf-header .c-sub  { font-size:13px; color:#888; margin-top:2px; }
-      #conf-body { padding:28px 24px; }
+
+      #conf-header .c-logo {
+        font-size: 40px;
+        margin-bottom: 8px;
+      }
+
+      #conf-header .c-name {
+        font-size: 18px;
+        font-weight: 700;
+        color: #B8916A;
+      }
+
+      #conf-header .c-sub {
+        font-size: 13px;
+        color: #888;
+        margin-top: 2px;
+      }
+
+      #conf-body {
+        padding: 28px 24px;
+      }
+
       .c-section-title {
-        font-size:12px; font-weight:600; color:#888;
-        text-transform:uppercase; letter-spacing:0.8px; margin-bottom:16px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin-bottom: 16px;
       }
-      .c-info-grid { display:flex; flex-direction:column; gap:10px; margin-bottom:24px; }
+
+      .c-info-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 24px;
+      }
+
       .c-info-row {
-        display:flex; align-items:center; gap:12px;
-        background:#242424; border:1px solid #2e2e2e;
-        border-radius:10px; padding:14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #242424;
+        border: 1px solid #2e2e2e;
+        border-radius: 10px;
+        padding: 14px 16px;
       }
-      .c-info-icon { font-size:20px; flex-shrink:0; width:28px; text-align:center; }
-      .c-info-label { font-size:11px; color:#888; font-weight:500; text-transform:uppercase; letter-spacing:0.5px; }
-      .c-info-value { font-size:15px; font-weight:600; color:#f0f0f0; margin-top:2px; }
-      .c-divider { height:1px; background:#2e2e2e; margin:0 0 22px; }
-      .c-question { font-size:15px; font-weight:600; color:#f0f0f0; text-align:center; margin-bottom:14px; }
-      .c-btn-group { display:flex; gap:12px; }
+
+      .c-info-icon {
+        font-size: 20px;
+        flex-shrink: 0;
+        width: 28px;
+        text-align: center;
+      }
+
+      .c-info-label {
+        font-size: 11px;
+        color: #888;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .c-info-value {
+        font-size: 15px;
+        font-weight: 600;
+        color: #f0f0f0;
+        margin-top: 2px;
+      }
+
+      .c-divider {
+        height: 1px;
+        background: #2e2e2e;
+        margin: 0 0 22px;
+      }
+
+      .c-question {
+        font-size: 15px;
+        font-weight: 600;
+        color: #f0f0f0;
+        text-align: center;
+        margin-bottom: 14px;
+      }
+
+      .c-btn-group {
+        display: flex;
+        gap: 12px;
+      }
+
       .c-btn {
-        flex:1; padding:16px 12px; border:none; border-radius:12px;
-        font-size:15px; font-weight:700; font-family:'Inter',sans-serif;
-        cursor:pointer; display:flex; align-items:center; justify-content:center;
-        gap:8px; transition:transform .12s,filter .12s;
+        flex: 1;
+        padding: 16px 12px;
+        border: none;
+        border-radius: 12px;
+        font-size: 15px;
+        font-weight: 700;
+        font-family: 'Inter', sans-serif;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: transform .12s, filter .12s;
       }
-      .c-btn:active { transform:scale(0.97); }
-      .c-btn:disabled { opacity:.5; cursor:not-allowed; }
-      .c-btn-ok  { background:#22c55e; color:#fff; }
-      .c-btn-ok:hover:not(:disabled)  { filter:brightness(1.1); }
-      .c-btn-no  { background:#1e1e1e; color:#ef4444; border:1.5px solid #ef4444; }
-      .c-btn-no:hover:not(:disabled)  { background:#2a1010; }
+
+      .c-btn:active {
+        transform: scale(0.97);
+      }
+
+      .c-btn:disabled {
+        opacity: .5;
+        cursor: not-allowed;
+      }
+
+      .c-btn-ok {
+        background: #22c55e;
+        color: #fff;
+      }
+
+      .c-btn-ok:hover:not(:disabled) {
+        filter: brightness(1.1);
+      }
+
+      .c-btn-no {
+        background: #1e1e1e;
+        color: #ef4444;
+        border: 1.5px solid #ef4444;
+      }
+
+      .c-btn-no:hover:not(:disabled) {
+        background: #2a1010;
+      }
+
       .c-feedback {
-        display:none; flex-direction:column; align-items:center;
-        text-align:center; padding:8px 0 4px;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 8px 0 4px;
       }
-      .c-feedback.show { display:flex; }
-      .c-feedback-icon  { font-size:52px; margin-bottom:12px; }
-      .c-feedback-title { font-size:20px; font-weight:700; margin-bottom:8px; }
-      .c-feedback-title.green { color:#22c55e; }
-      .c-feedback-title.red   { color:#ef4444; }
-      .c-feedback-msg   { font-size:14px; color:#888; line-height:1.5; }
+
+      .c-feedback.show {
+        display: flex;
+      }
+
+      .c-feedback-icon {
+        font-size: 52px;
+        margin-bottom: 12px;
+      }
+
+      .c-feedback-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+
+      .c-feedback-title.green {
+        color: #22c55e;
+      }
+
+      .c-feedback-title.red {
+        color: #ef4444;
+      }
+
+      .c-feedback-msg {
+        font-size: 14px;
+        color: #888;
+        line-height: 1.5;
+      }
+
       .c-spinner {
-        width:36px; height:36px; border:3px solid #2e2e2e;
-        border-top-color:#B8916A; border-radius:50%;
-        animation:cspin .8s linear infinite;
+        width: 36px;
+        height: 36px;
+        border: 3px solid #2e2e2e;
+        border-top-color: #B8916A;
+        border-radius: 50%;
+        animation: cspin .8s linear infinite;
       }
-      @keyframes cspin { to { transform:rotate(360deg); } }
-      .c-loading { display:flex; flex-direction:column; align-items:center; gap:12px; padding:16px 0 8px; }
-      .c-loading-text { font-size:13px; color:#888; }
-      .c-error { display:none; flex-direction:column; align-items:center; text-align:center; gap:10px; padding:8px 0 4px; }
-      .c-error.show { display:flex; }
-      .c-error-icon  { font-size:44px; }
-      .c-error-title { font-size:17px; font-weight:700; color:#ef4444; }
-      .c-error-msg   { font-size:13px; color:#888; line-height:1.5; }
-      .c-already { display:none; flex-direction:column; align-items:center; text-align:center; gap:10px; padding:8px 0 4px; }
-      .c-already.show { display:flex; }
-      .c-already-icon  { font-size:44px; }
-      .c-already-title { font-size:17px; font-weight:700; }
-      .c-already-msg   { font-size:13px; color:#888; line-height:1.5; }
-      #conf-footer { margin-top:20px; font-size:12px; color:#555; text-align:center; }
+
+      @keyframes cspin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .c-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 0 8px;
+      }
+
+      .c-loading-text {
+        font-size: 13px;
+        color: #888;
+      }
+
+      .c-error {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 10px;
+        padding: 8px 0 4px;
+      }
+
+      .c-error.show {
+        display: flex;
+      }
+
+      .c-error-icon {
+        font-size: 44px;
+      }
+
+      .c-error-title {
+        font-size: 17px;
+        font-weight: 700;
+        color: #ef4444;
+      }
+
+      .c-error-msg {
+        font-size: 13px;
+        color: #888;
+        line-height: 1.5;
+      }
+
+      .c-already {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 10px;
+        padding: 8px 0 4px;
+      }
+
+      .c-already.show {
+        display: flex;
+      }
+
+      .c-already-icon {
+        font-size: 44px;
+      }
+
+      .c-already-title {
+        font-size: 17px;
+        font-weight: 700;
+      }
+
+      .c-already-msg {
+        font-size: 13px;
+        color: #888;
+        line-height: 1.5;
+      }
+
+      #conf-footer {
+        margin-top: 20px;
+        font-size: 12px;
+        color: #555;
+        text-align: center;
+      }
     </style>
 
     <div id="conf-card">
@@ -2266,8 +2490,8 @@
           <div id="c-action">
             <div class="c-question">Deseja confirmar este agendamento?</div>
             <div class="c-btn-group">
-              <button class="c-btn c-btn-ok" id="c-btn-sim"  onclick="confResponder('confirmado')">✅ Confirmar</button>
-              <button class="c-btn c-btn-no" id="c-btn-nao"  onclick="confResponder('cancelado')">❌ Cancelar</button>
+              <button class="c-btn c-btn-ok" id="c-btn-sim" onclick="confResponder('confirmado')">✅ Confirmar</button>
+              <button class="c-btn c-btn-no" id="c-btn-nao" onclick="confResponder('cancelado')">❌ Cancelar</button>
             </div>
           </div>
 
@@ -2275,21 +2499,23 @@
           <div class="c-feedback" id="c-fb-confirmado">
             <div class="c-feedback-icon">🎉</div>
             <div class="c-feedback-title green">Agendamento confirmado!</div>
-            <div class="c-feedback-msg">Ótimo! Sua presença está confirmada.<br>Aguardamos você no Studio Shelly Rodrigues. 💛</div>
+            <div class="c-feedback-msg">Ótimo! Sua presença está confirmada.<br>Aguardamos você no Studio Shelly
+              Rodrigues. 💛</div>
           </div>
 
           <!-- Feedback cancelado -->
           <div class="c-feedback" id="c-fb-cancelado">
             <div class="c-feedback-icon">😔</div>
             <div class="c-feedback-title red">Agendamento cancelado</div>
-            <div class="c-feedback-msg">Seu agendamento foi cancelado.<br>Quando quiser, entre em contato para reagendar!</div>
+            <div class="c-feedback-msg">Seu agendamento foi cancelado.<br>Quando quiser, entre em contato para
+              reagendar!</div>
           </div>
 
           <!-- Já respondido -->
           <div class="c-already" id="c-already">
             <div class="c-already-icon" id="c-already-icon">ℹ️</div>
             <div class="c-already-title" id="c-already-title">Resposta já registrada</div>
-            <div class="c-already-msg"  id="c-already-msg">Este agendamento já foi respondido anteriormente.</div>
+            <div class="c-already-msg" id="c-already-msg">Este agendamento já foi respondido anteriormente.</div>
           </div>
         </div>
 
@@ -2307,111 +2533,111 @@
 
   <!-- Script de confirmação -->
   <script type="module">
-    import { initializeApp }       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getFirestore, doc, getDoc, updateDoc }
-                                   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    (async function() {
-    var params = new URLSearchParams(window.location.search);
-    var agId   = params.get('id');
-    if (!agId) return; // não é link de confirmação, sai
+    (async function () {
+      var params = new URLSearchParams(window.location.search);
+      var agId = params.get('id');
+      if (!agId) return; // não é link de confirmação, sai
 
-    // Mostra overlay imediatamente
-    document.getElementById('confirmacao-overlay').style.display = 'flex';
+      // Mostra overlay imediatamente
+      document.getElementById('confirmacao-overlay').style.display = 'flex';
 
-    // Inicializa Firebase próprio (independente do app)
-    const _cfg = {
-      apiKey:            "AIzaSyBQcTGkiastpRAjGthU9nHy_uqpQjUMdu0",
-      authDomain:        "websalao-2a9d1.firebaseapp.com",
-      projectId:         "websalao-2a9d1",
-      storageBucket:     "websalao-2a9d1.firebasestorage.app",
-      messagingSenderId: "731611795568",
-      appId:             "1:731611795568:web:103e44f116e152961024b5"
-    };
+      // Inicializa Firebase próprio (independente do app)
+      const _cfg = {
+        apiKey: "AIzaSyBQcTGkiastpRAjGthU9nHy_uqpQjUMdu0",
+        authDomain: "websalao-2a9d1.firebaseapp.com",
+        projectId: "websalao-2a9d1",
+        storageBucket: "websalao-2a9d1.firebasestorage.app",
+        messagingSenderId: "731611795568",
+        appId: "1:731611795568:web:103e44f116e152961024b5"
+      };
 
-    // Usa nome diferente para não conflitar com o app principal
-    let _app, _db;
-    try {
-      _app = initializeApp(_cfg, 'confirmacao');
-    } catch(e) {
-      _app = initializeApp(_cfg); // fallback se já existir
-    }
-    _db = getFirestore(_app);
-
-    function fmtDate(str) {
-      if (!str) return '—';
-      var p = str.split('-');
-      return p.length === 3 ? p[2]+'/'+p[1]+'/'+p[0] : str;
-    }
-
-    function showError() {
-      document.getElementById('c-loading').style.display = 'none';
-      document.getElementById('c-error').classList.add('show');
-    }
-
-    function showMain() {
-      document.getElementById('c-loading').style.display = 'none';
-      document.getElementById('c-main').style.display = 'block';
-    }
-
-    function showAlready(status) {
-      document.getElementById('c-action').style.display = 'none';
-      var icon  = document.getElementById('c-already-icon');
-      var title = document.getElementById('c-already-title');
-      var msg   = document.getElementById('c-already-msg');
-      if (status === 'confirmado') {
-        icon.textContent  = '✅';
-        title.textContent = 'Agendamento já confirmado';
-        title.style.color = '#22c55e';
-        msg.textContent   = 'Você já confirmou este agendamento. Até logo! 💛';
-      } else {
-        icon.textContent  = '❌';
-        title.textContent = 'Agendamento já cancelado';
-        title.style.color = '#ef4444';
-        msg.textContent   = 'Este agendamento já foi cancelado anteriormente.';
+      // Usa nome diferente para não conflitar com o app principal
+      let _app, _db;
+      try {
+        _app = initializeApp(_cfg, 'confirmacao');
+      } catch (e) {
+        _app = initializeApp(_cfg); // fallback se já existir
       }
-      document.getElementById('c-already').classList.add('show');
-    }
+      _db = getFirestore(_app);
 
-    try {
-      const ref  = doc(_db, 'agendamentos', String(agId));
-      const snap = await getDoc(ref);
+      function fmtDate(str) {
+        if (!str) return '—';
+        var p = str.split('-');
+        return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : str;
+      }
 
-      if (!snap.exists()) { showError(); }
-      else {
-        const ag = snap.data();
-        document.getElementById('c-cliente').textContent = ag.clienteNome || '—';
-        document.getElementById('c-servico').textContent = ag.servicoNome || '—';
-        document.getElementById('c-data').textContent    = fmtDate(ag.data);
-        document.getElementById('c-hora').textContent    = ag.hora || '—';
-        showMain();
+      function showError() {
+        document.getElementById('c-loading').style.display = 'none';
+        document.getElementById('c-error').classList.add('show');
+      }
 
-        if (ag.status === 'confirmado' || ag.status === 'cancelado') {
-          showAlready(ag.status);
+      function showMain() {
+        document.getElementById('c-loading').style.display = 'none';
+        document.getElementById('c-main').style.display = 'block';
+      }
+
+      function showAlready(status) {
+        document.getElementById('c-action').style.display = 'none';
+        var icon = document.getElementById('c-already-icon');
+        var title = document.getElementById('c-already-title');
+        var msg = document.getElementById('c-already-msg');
+        if (status === 'confirmado') {
+          icon.textContent = '✅';
+          title.textContent = 'Agendamento já confirmado';
+          title.style.color = '#22c55e';
+          msg.textContent = 'Você já confirmou este agendamento. Até logo! 💛';
+        } else {
+          icon.textContent = '❌';
+          title.textContent = 'Agendamento já cancelado';
+          title.style.color = '#ef4444';
+          msg.textContent = 'Este agendamento já foi cancelado anteriormente.';
         }
-
-        window.confResponder = async function(novoStatus) {
-          document.getElementById('c-btn-sim').disabled = true;
-          document.getElementById('c-btn-nao').disabled = true;
-          try {
-            await updateDoc(ref, {
-              status: novoStatus,
-              confirmadoEm: new Date().toISOString(),
-              confirmadoPeloCliente: true
-            });
-            document.getElementById('c-action').style.display = 'none';
-            document.getElementById('c-fb-' + novoStatus).classList.add('show');
-          } catch(e) {
-            document.getElementById('c-btn-sim').disabled = false;
-            document.getElementById('c-btn-nao').disabled = false;
-            alert('Erro ao salvar. Tente novamente.');
-          }
-        };
+        document.getElementById('c-already').classList.add('show');
       }
-    } catch(e) {
-      console.error(e);
-      showError();
-    }
+
+      try {
+        const ref = doc(_db, 'agendamentos', String(agId));
+        const snap = await getDoc(ref);
+
+        if (!snap.exists()) { showError(); }
+        else {
+          const ag = snap.data();
+          document.getElementById('c-cliente').textContent = ag.clienteNome || '—';
+          document.getElementById('c-servico').textContent = ag.servicoNome || '—';
+          document.getElementById('c-data').textContent = fmtDate(ag.data);
+          document.getElementById('c-hora').textContent = ag.hora || '—';
+          showMain();
+
+          if (ag.status === 'confirmado' || ag.status === 'cancelado') {
+            showAlready(ag.status);
+          }
+
+          window.confResponder = async function (novoStatus) {
+            document.getElementById('c-btn-sim').disabled = true;
+            document.getElementById('c-btn-nao').disabled = true;
+            try {
+              await updateDoc(ref, {
+                status: novoStatus,
+                confirmadoEm: new Date().toISOString(),
+                confirmadoPeloCliente: true
+              });
+              document.getElementById('c-action').style.display = 'none';
+              document.getElementById('c-fb-' + novoStatus).classList.add('show');
+            } catch (e) {
+              document.getElementById('c-btn-sim').disabled = false;
+              document.getElementById('c-btn-nao').disabled = false;
+              alert('Erro ao salvar. Tente novamente.');
+            }
+          };
+        }
+      } catch (e) {
+        console.error(e);
+        showError();
+      }
     })(); // fim IIFE async
   </script>
 
@@ -2668,9 +2894,9 @@
           const ant = prev.find(x => String(x.id) === String(ag.id));
           if (ant && ant.status !== ag.status) {
             if (ag.status === 'confirmado')
-              toast(`✅ ${(ag.clienteNome||'').split(' ')[0]} confirmou!`, 'success');
+              toast(`✅ ${(ag.clienteNome || '').split(' ')[0]} confirmou!`, 'success');
             else if (ag.status === 'cancelado')
-              toast(`❌ ${(ag.clienteNome||'').split(' ')[0]} cancelou.`, 'error');
+              toast(`❌ ${(ag.clienteNome || '').split(' ')[0]} cancelou.`, 'error');
             // Atualiza wppMensagens
             if (State.data.wppMensagens) {
               const mi = State.data.wppMensagens.findIndex(m => String(m.agId) === String(ag.id));
@@ -2738,7 +2964,7 @@
             if (document.getElementById('wpp-inbox-inner')) renderWppInboxCard();
             updateWppBadge();
           }
-        } catch(e) {}
+        } catch (e) { }
       }, 10000);
     }
     // ─── SYNC (no-ops — Firebase cuida) ─────────────────────────────────────────
@@ -3810,15 +4036,20 @@
       </div>
       <div id="agenda-grid-wrap"></div>
 
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0 12px 0;">
-        <span style="font-size:11px;color:var(--text-muted);font-weight:600;letter-spacing:0.05em;">LEGENDA:</span>
-        <span class="badge badge-green">✓ Confirmado</span>
-        <span class="badge badge-gold">⏳ Pendente</span>
-        <span class="badge badge-wpp">📱 WhatsApp</span>
-        <span class="badge badge-red">✕ Cancelado</span>
-      </div>
+      <div class="agenda-bottom-section">
+        <div class="card">
+          <div class="card-header" style="margin-bottom:16px;">
+            <div class="card-title">Legenda</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <span class="badge badge-green" style="width:fit-content;padding:5px 12px;font-size:12px;">✓ Confirmado</span>
+            <span class="badge badge-gold" style="width:fit-content;padding:5px 12px;font-size:12px;">⏳ Pendente</span>
+            <span class="badge badge-wpp" style="width:fit-content;padding:5px 12px;font-size:12px;">📱 WhatsApp</span>
+            <span class="badge badge-red" style="width:fit-content;padding:5px 12px;font-size:12px;">✕ Cancelado</span>
+          </div>
+        </div>
 
-      <div class="card" id="wpp-inbox-card" style="margin-top:0;">
+        <div class="card" id="wpp-inbox-card" style="margin-top:0;">
           <div class="card-header">
             <div>
               <div class="card-title" style="display:flex;align-items:center;gap:8px;">
@@ -3849,6 +4080,7 @@
           </div>
           <div id="wpp-inbox-inner"></div>
         </div>
+      </div>
     </div>
   `;
       renderAgendaGrid();
@@ -3859,7 +4091,7 @@
     function renderWppInboxCard() {
       const el = document.getElementById('wpp-inbox-inner');
       if (!el) return;
-      const msgs = (State.data.wppMensagens || []).slice().sort((a,b) => new Date(b.enviadoEm||0) - new Date(a.enviadoEm||0));
+      const msgs = (State.data.wppMensagens || []).slice().sort((a, b) => new Date(b.enviadoEm || 0) - new Date(a.enviadoEm || 0));
 
       if (!msgs.length) {
         el.innerHTML = `<div class="empty-state" style="padding:24px 0;">
@@ -3929,7 +4161,7 @@
           onmouseout="this.style.background='rgba(255,255,255,0.03)'">
           ↓ Ver mais ${msgs.length - _lim} mensagens
         </button>`;
-      } else if ((window._wppInboxLimite||8) > 8) {
+      } else if ((window._wppInboxLimite || 8) > 8) {
         html += `<button onclick="window._wppInboxLimite=8;renderWppInboxCard();"
           style="width:100%;padding:10px;background:transparent;border:none;
           color:var(--text-muted);font-size:12px;cursor:pointer;">
@@ -4319,7 +4551,7 @@
           }
           registrarMensagemEnviada(novoAg, cli);
           // Salva novo agendamento diretamente no Firebase (sem esperar batch)
-          if (window.FirebaseDB) window.FirebaseDB.fbSet('agendamentos', novoAg.id, novoAg).catch(()=>{});
+          if (window.FirebaseDB) window.FirebaseDB.fbSet('agendamentos', novoAg.id, novoAg).catch(() => { });
           saveAll(); // salva wppMensagens no Firebase APÓS registrar
           updateWppBadge();
           if (document.getElementById('wpp-inbox-inner')) renderWppInboxCard();
@@ -4879,7 +5111,7 @@
     function renderWppLista() {
       const el = document.getElementById('wpp-lista');
       if (!el) return;
-      const msgs = (State.data.wppMensagens || []).slice().sort((a,b) => new Date(b.enviadoEm||0) - new Date(a.enviadoEm||0));
+      const msgs = (State.data.wppMensagens || []).slice().sort((a, b) => new Date(b.enviadoEm || 0) - new Date(a.enviadoEm || 0));
 
       if (!msgs.length) {
         el.innerHTML = `<div class="empty-state" style="padding:32px;">
