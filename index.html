@@ -3818,7 +3818,25 @@
               </div>
               <div class="card-subtitle">Respostas via WhatsApp</div>
             </div>
-            <button class="btn btn-ghost btn-sm" onclick="renderWppInboxCard()">↻</button>
+            <button class="btn btn-ghost btn-sm" title="Atualizar" onclick="(async()=>{
+              if(!window.FirebaseDB)return;
+              try{
+                const [agFb,wppFb]=await Promise.all([
+                  window.FirebaseDB.fbGetAll('agendamentos'),
+                  window.FirebaseDB.fbGetAll('wppMensagens')
+                ]);
+                if(agFb.length){State.data.agendamentos=agFb;Storage.save('agendamentos',agFb);}
+                const wppLocal=State.data.wppMensagens||[];
+                const merged=[...wppFb];
+                wppLocal.forEach(l=>{if(!merged.find(n=>String(n.id)===String(l.id)))merged.push(l);});
+                State.data.wppMensagens=merged;
+                Storage.save('wppMensagens',merged);
+                renderWppInboxCard();
+                updateWppBadge();
+                if(State.currentPage==='agenda')renderAgendaGrid();
+                toast('Atualizado ✓','success');
+              }catch(e){toast('Erro','error');}
+            })()">↻</button>
           </div>
           <div id="wpp-inbox-inner"></div>
         </div>
@@ -3833,7 +3851,7 @@
     function renderWppInboxCard() {
       const el = document.getElementById('wpp-inbox-inner');
       if (!el) return;
-      const msgs = (State.data.wppMensagens || []).slice().reverse();
+      const msgs = (State.data.wppMensagens || []).slice().sort((a,b) => new Date(b.enviadoEm||0) - new Date(a.enviadoEm||0));
 
       if (!msgs.length) {
         el.innerHTML = `<div class="empty-state" style="padding:24px 0;">
@@ -4837,7 +4855,7 @@
     function renderWppLista() {
       const el = document.getElementById('wpp-lista');
       if (!el) return;
-      const msgs = (State.data.wppMensagens || []).slice().reverse();
+      const msgs = (State.data.wppMensagens || []).slice().sort((a,b) => new Date(b.enviadoEm||0) - new Date(a.enviadoEm||0));
 
       if (!msgs.length) {
         el.innerHTML = `<div class="empty-state" style="padding:32px;">
