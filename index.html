@@ -2625,75 +2625,74 @@
       } catch (e) { console.warn('[Firebase] load:', e.message); return false; }
     }
 
-    // ─── POLLING (Firebase onSnapshot) ───────────────────────────────────────────
+    // ─── POLLING (Firebase — intervalo + onSnapshot) ────────────────────────────
+    function processarAtualizacaoAgendamentos(novos) {
+      const prev = State.data.agendamentos || [];
+      novos.forEach(ag => {
+        const p = prev.find(x => String(x.id) === String(ag.id));
+        if (p && p.status !== ag.status) {
+          if (ag.status === 'confirmado') {
+            toast(`✅ ${(ag.clienteNome || '').split(' ')[0]} confirmou o agendamento!`, 'success');
+          } else if (ag.status === 'cancelado') {
+            toast(`❌ ${(ag.clienteNome || '').split(' ')[0]} cancelou o agendamento.`, 'error');
+          }
+          // Sincroniza wppMensagens
+          if (State.data.wppMensagens) {
+            const mi = State.data.wppMensagens.findIndex(
+              m => String(m.agId) === String(ag.id)
+            );
+            if (mi >= 0) {
+              State.data.wppMensagens[mi].resposta = ag.status === 'confirmado' ? 'sim' : 'nao';
+              State.data.wppMensagens[mi].respostaEm = ag.confirmadoEm || new Date().toISOString();
+              State.data.wppMensagens[mi].lida = false;
+              Storage.save('wppMensagens', State.data.wppMensagens);
+            }
+          }
+        }
+      });
+      State.data.agendamentos = novos;
+      Storage.save('agendamentos', novos);
+      if (State.currentPage === 'agenda') renderAgendaGrid();
+      if (document.getElementById('wpp-inbox-inner')) renderWppInboxCard();
+      updateWppBadge();
+    }
+
     function startPolling() {
       if (!window.FirebaseDB) return;
-      const { db, collection, onSnapshot } = window.FirebaseDB;
+      const { db, collection, onSnapshot, fbGetAll } = window.FirebaseDB;
+
+      // 1) onSnapshot para wppMensagens
       onSnapshot(collection(db, 'wppMensagens'), snap => {
         const novas = snap.docs.map(d => {
           const data = d.data();
           const numId = isNaN(d.id) ? data.id : Number(d.id);
           return { ...data, id: numId !== undefined ? numId : d.id };
         });
-        const prev = State.data.wppMensagens || [];
-        novas.forEach(m => {
-          const p = prev.find(x => x.id === m.id);
-          if (m.resposta && (!p || p.resposta !== m.resposta)) {
-            if (m.resposta === 'sim')
-              toast(`✅ ${(m.clienteNome || '').split(' ')[0]} confirmou!`, 'success');
-            else if (m.resposta === 'nao')
-              toast(`❌ ${(m.clienteNome || '').split(' ')[0]} cancelou.`, 'error');
-          }
-        });
         State.data.wppMensagens = novas;
         Storage.save('wppMensagens', novas);
         updateWppBadge();
         if (document.getElementById('wpp-inbox-inner')) renderWppInboxCard();
       });
+
+      // 2) onSnapshot para agendamentos
       onSnapshot(collection(db, 'agendamentos'), snap => {
         const novos = snap.docs.map(d => {
           const dado = d.data();
           const numId = isNaN(d.id) ? dado.id : Number(d.id);
           return { ...dado, id: numId !== undefined ? numId : d.id };
         });
-
-        // Detecta mudanças de status vindas do Firebase (ex: cliente confirmou pelo link)
-        const prev = State.data.agendamentos || [];
-        let houveMudanca = false;
-        novos.forEach(ag => {
-          const p = prev.find(x => String(x.id) === String(ag.id));
-          if (p && p.status !== ag.status) {
-            houveMudanca = true;
-            // Notifica apenas se foi o cliente quem confirmou (via link)
-            if (ag.confirmadoPeloCliente) {
-              if (ag.status === 'confirmado') {
-                toast(`✅ ${(ag.clienteNome || '').split(' ')[0]} confirmou o agendamento!`, 'success');
-              } else if (ag.status === 'cancelado') {
-                toast(`❌ ${(ag.clienteNome || '').split(' ')[0]} cancelou o agendamento.`, 'error');
-              }
-            }
-            // Sincroniza wppMensagens com o novo status
-            if (State.data.wppMensagens) {
-              const mi = State.data.wppMensagens.findIndex(
-                m => String(m.agId) === String(ag.id)
-              );
-              if (mi >= 0) {
-                State.data.wppMensagens[mi].resposta = ag.status === 'confirmado' ? 'sim' : 'nao';
-                State.data.wppMensagens[mi].respostaEm = ag.confirmadoEm || new Date().toISOString();
-                State.data.wppMensagens[mi].lida = false;
-                Storage.save('wppMensagens', State.data.wppMensagens);
-              }
-            }
-          }
-        });
-
-        State.data.agendamentos = novos;
-        Storage.save('agendamentos', novos);
-        // Sempre re-renderiza a agenda ao receber atualização do Firebase
-        if (State.currentPage === 'agenda') renderAgendaGrid();
-        if (document.getElementById('wpp-inbox-inner')) renderWppInboxCard();
-        updateWppBadge();
+        processarAtualizacaoAgendamentos(novos);
       });
+
+      // 3) Polling de segurança a cada 15s — garante atualização mesmo se
+      //    o onSnapshot falhar ou não disparar por algum motivo
+      setInterval(async () => {
+        try {
+          const { fbGetAll } = window.FirebaseDB;
+          const novos = await fbGetAll('agendamentos');
+          processarAtualizacaoAgendamentos(novos);
+        } catch(e) { /* silencioso */ }
+      }, 15000);
     }
 
     // ─── SYNC (no-ops — Firebase cuida) ─────────────────────────────────────────
@@ -3714,6 +3713,7 @@
         <div class="week-title" id="agenda-week-title">...</div>
         <button class="btn btn-ghost btn-sm" onclick="agendaNav(1)">Próx →</button>
         <button class="btn btn-outline btn-sm" onclick="agendaWeekOffset=0;renderAgendaGrid()">Hoje</button>
+        <button class="btn btn-ghost btn-sm" title="Buscar atualizações" onclick="(async()=>{if(!window.FirebaseDB)return;try{const novos=await window.FirebaseDB.fbGetAll('agendamentos');processarAtualizacaoAgendamentos(novos);toast('Agenda atualizada ✓','success');}catch(e){toast('Erro ao atualizar','error');}})()">🔄</button>
         <button class="btn btn-primary btn-sm" style="margin-left:auto;" onclick="openAgModal()">+ Novo</button>
       </div>
       <div id="agenda-grid-wrap"></div>
