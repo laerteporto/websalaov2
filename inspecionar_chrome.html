@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Inspecionar localStorage</title>
+<style>
+  body { font-family: monospace; background: #111; color: #eee; padding: 20px; }
+  h2 { color: #f0d070; }
+  pre { background: #1a1a1a; padding: 16px; border-radius: 8px; font-size: 13px; white-space: pre-wrap; max-height: 600px; overflow-y: auto; }
+  .ok { color: #22c55e; } .err { color: #ef4444; } .warn { color: #f0d070; }
+  .btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold; margin: 6px; }
+  .verde { background: #22c55e; color: #000; }
+  .stat { display:inline-block; background:#1a1a1a; border:1px solid #333; border-radius:8px; padding:12px 20px; margin:6px; text-align:center; }
+  .num { font-size:28px; font-weight:bold; color:#f0d070; }
+</style>
+</head>
+<body>
+<h2>🔍 Inspecionar localStorage — Todas as chaves</h2>
+
+<div id="stats"></div>
+<pre id="resultado">Carregando...</pre>
+<button class="btn verde" onclick="sincronizar()" id="btn-sync" style="display:none">⬆️ Sincronizar para Firebase</button>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, writeBatch, doc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const cfg = {
+  apiKey: 'AIzaSyBQcTGkiastpRAjGthU9nHy_uqpQjUMdu0',
+  authDomain: 'websalao-2a9d1.firebaseapp.com',
+  projectId: 'websalao-2a9d1',
+  storageBucket: 'websalao-2a9d1.firebasestorage.app',
+  messagingSenderId: '731611795568',
+  appId: '1:731611795568:web:103e44f116e152961024b5'
+};
+const db = getFirestore(initializeApp(cfg));
+
+function tryParse(v) { try { return JSON.parse(v); } catch { return null; } }
+
+// Mapear TODAS as chaves e tentar identificar agendamentos
+const todas = {};
+for (let i = 0; i < localStorage.length; i++) {
+  const k = localStorage.key(i);
+  const v = localStorage.getItem(k);
+  const parsed = tryParse(v);
+  todas[k] = {
+    chars: v?.length || 0,
+    tipo: Array.isArray(parsed) ? `array[${parsed.length}]` : typeof parsed,
+    amostra: Array.isArray(parsed) && parsed[0] ? JSON.stringify(parsed[0]).slice(0,100) : String(v).slice(0,80)
+  };
+}
+
+const out = document.getElementById('resultado');
+
+if (Object.keys(todas).length === 0) {
+  out.innerHTML = '<span class="err">localStorage VAZIO neste browser</span>';
+} else {
+  let html = '<span class="warn">TODAS AS CHAVES ENCONTRADAS:</span>\n\n';
+  let agendamentos = null;
+  let agKey = '';
+
+  for (const [k, info] of Object.entries(todas)) {
+    const isAg = info.tipo.startsWith('array') && (
+      k.includes('agend') || k.includes('Agend') ||
+      (info.amostra.includes('clienteNome') || info.amostra.includes('servicoNome') || info.amostra.includes('data'))
+    );
+    const mark = isAg ? ' ← AGENDAMENTOS!' : '';
+    html += `<span class="${isAg ? 'ok' : ''}">${k}: ${info.chars} chars | ${info.tipo}${mark}</span>\n`;
+    if (info.tipo.startsWith('array')) {
+      html += `  amostra: ${info.amostra}\n`;
+    }
+    html += '\n';
+
+    if (isAg && !agendamentos) {
+      agendamentos = tryParse(localStorage.getItem(k));
+      agKey = k;
+    }
+  }
+
+  out.innerHTML = html;
+
+  if (agendamentos && agendamentos.length > 0) {
+    document.getElementById('stats').innerHTML = `
+      <div class="stat"><div class="num ok">${agendamentos.length}</div><div>Agendamentos em "${agKey}"</div></div>
+    `;
+    document.getElementById('btn-sync').style.display = 'inline-block';
+    window._agKey = agKey;
+    window._agData = agendamentos;
+  }
+}
+
+async function batchSet(col, items) {
+  for (let i = 0; i < items.length; i += 499) {
+    const chunk = items.slice(i, i + 499);
+    const batch = writeBatch(db);
+    chunk.forEach((item, idx) => {
+      const id = String(item.id !== undefined ? item.id : (i+idx+1));
+      batch.set(doc(db, col, id), {...item, id: isNaN(id)?id:Number(id)}, {merge:true});
+    });
+    await batch.commit();
+  }
+}
+
+window.sincronizar = async function() {
+  out.innerHTML += '\n<span class="warn">Sincronizando...</span>\n';
+  try {
+    const ag  = window._agData || [];
+    // Tentar encontrar wpp, clientes etc com chaves similares
+    const prefix = window._agKey.replace(/agend.*/i, '');
+    const wpp = tryParse(localStorage.getItem(prefix+'wppMensagens') || localStorage.getItem(prefix+'wpp') || '[]') || [];
+    const cli = tryParse(localStorage.getItem(prefix+'clientes') || '[]') || [];
+    const svc = tryParse(localStorage.getItem(prefix+'servicos') || '[]') || [];
+    const fin = tryParse(localStorage.getItem(prefix+'financeiro') || '[]') || [];
+
+    await batchSet('agendamentos', ag);
+    out.innerHTML += `<span class="ok">✅ ${ag.length} agendamentos migrados</span>\n`;
+
+    if(wpp.length) { await batchSet('wppMensagens', wpp); out.innerHTML += `<span class="ok">✅ ${wpp.length} WPP</span>\n`; }
+    if(cli.length) { await batchSet('clientes', cli); out.innerHTML += `<span class="ok">✅ ${cli.length} clientes</span>\n`; }
+    if(svc.length) { await batchSet('servicos', svc); out.innerHTML += `<span class="ok">✅ ${svc.length} serviços</span>\n`; }
+    if(fin.length) { await batchSet('financeiro', fin); out.innerHTML += `<span class="ok">✅ ${fin.length} financeiro</span>\n`; }
+
+    out.innerHTML += '\n<span class="ok">🎉 MIGRAÇÃO COMPLETA! Abra o sistema em qualquer browser.</span>\n';
+    out.innerHTML += '<a href="https://websalaov2.vercel.app" target="_blank" style="color:#f0d070">→ Abrir Sistema</a>\n';
+  } catch(e) {
+    out.innerHTML += `<span class="err">ERRO: ${e.message}</span>\n`;
+  }
+};
+</script>
+</body>
+</html>

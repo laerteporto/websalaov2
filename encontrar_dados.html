@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Encontrar Dados</title>
+<style>
+  body { font-family: monospace; background: #111; color: #eee; padding: 20px; }
+  h2 { color: #f0d070; }
+  .card { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 16px; margin: 12px 0; }
+  .big { font-size: 32px; font-weight: bold; }
+  .ok { color: #22c55e; }
+  .err { color: #ef4444; }
+  .warn { color: #f0d070; }
+  pre { background: #0a0a0a; padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 12px; }
+  .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; margin: 4px; }
+  .verde { background: #22c55e; color: #000; }
+  .ouro { background: #c9a84c; color: #000; }
+</style>
+</head>
+<body>
+<h2>🔍 Encontrar Dados do Sistema</h2>
+
+<div class="card">
+  <b>localStorage neste browser:</b><br>
+  <span id="resultado-local" class="big">verificando...</span>
+</div>
+
+<div class="card">
+  <b>Chaves encontradas:</b>
+  <pre id="chaves">...</pre>
+</div>
+
+<button class="btn ouro" onclick="verificarTudo()">🔍 Verificar este browser</button>
+<button class="btn verde" onclick="copiarParaFirebase()" id="btn-sync" style="display:none">⬆️ Sincronizar para Firebase</button>
+
+<pre id="log" style="margin-top:16px; background:#1a1a1a; padding:12px; border-radius:8px; max-height:400px; overflow-y:auto;"></pre>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, getDocs, writeBatch, doc }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const cfg = {
+  apiKey: 'AIzaSyBQcTGkiastpRAjGthU9nHy_uqpQjUMdu0',
+  authDomain: 'websalao-2a9d1.firebaseapp.com',
+  projectId: 'websalao-2a9d1',
+  storageBucket: 'websalao-2a9d1.firebasestorage.app',
+  messagingSenderId: '731611795568',
+  appId: '1:731611795568:web:103e44f116e152961024b5'
+};
+const db = getFirestore(initializeApp(cfg));
+const logEl = document.getElementById('log');
+
+function log(msg, t='') {
+  const ts = new Date().toLocaleTimeString('pt-BR');
+  logEl.innerHTML += `<span class="${t}">[${ts}] ${msg}</span>\n`;
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function getLocal(k) { try { return JSON.parse(localStorage.getItem(k))||[]; } catch { return []; } }
+
+async function batchSet(col, items) {
+  for (let i=0; i<items.length; i+=499) {
+    const chunk = items.slice(i,i+499);
+    const batch = writeBatch(db);
+    chunk.forEach(item => batch.set(doc(db, col, String(item.id)), item, {merge:true}));
+    await batch.commit();
+  }
+}
+
+window.verificarTudo = function() {
+  logEl.innerHTML = '';
+
+  // Listar TODAS as chaves do localStorage
+  const todasChaves = Object.keys(localStorage);
+  document.getElementById('chaves').textContent = todasChaves.length 
+    ? todasChaves.map(k => `${k}: ${localStorage.getItem(k)?.length || 0} chars`).join('\n')
+    : '(localStorage vazio neste browser)';
+
+  const ag  = getLocal('agendamentos');
+  const wpp = getLocal('wppMensagens');
+  const cli = getLocal('clientes');
+
+  const total = ag.length + wpp.length + cli.length;
+  const el = document.getElementById('resultado-local');
+
+  if (total === 0) {
+    el.innerHTML = '<span class="err">0 — VAZIO</span>';
+    log('❌ Este browser não tem dados do sistema no localStorage', 'err');
+    log('', '');
+    log('Você precisa abrir este arquivo no browser/perfil onde normalmente acessa websalaov2.vercel.app', 'warn');
+    log('', '');
+    log('Dica: tente outros browsers ou perfis do Chrome:', 'warn');
+    log('  - Chrome normal (não anônimo)', 'warn');
+    log('  - Firefox', 'warn');
+    log('  - Edge', 'warn');
+  } else {
+    el.innerHTML = `<span class="ok">${ag.length} agendamentos, ${wpp.length} WPP, ${cli.length} clientes</span>`;
+    log(`✅ Dados encontrados: ${ag.length} agendamentos`, 'ok');
+    log(`   ${wpp.length} mensagens WhatsApp`, 'ok');
+    log(`   ${cli.length} clientes`, 'ok');
+    if (ag.length > 0) {
+      log('', '');
+      log('3 primeiros agendamentos:', 'warn');
+      ag.slice(0,3).forEach(a => log(`  ID=${a.id} | ${a.clienteNome} | ${a.data} | ${a.status}`, ''));
+      document.getElementById('btn-sync').style.display = 'inline-block';
+    }
+  }
+};
+
+window.copiarParaFirebase = async function() {
+  const ag  = getLocal('agendamentos');
+  const wpp = getLocal('wppMensagens');
+  const cli = getLocal('clientes');
+  const svc = getLocal('servicos');
+  const fin = getLocal('financeiro');
+
+  if (ag.length === 0) { log('❌ Nada para sincronizar', 'err'); return; }
+
+  log('Iniciando sincronização...', 'warn');
+  try {
+    await batchSet('agendamentos', ag); log(`✅ ${ag.length} agendamentos`, 'ok');
+    await batchSet('wppMensagens', wpp); log(`✅ ${wpp.length} mensagens WPP`, 'ok');
+    if(cli.length) { await batchSet('clientes', cli); log(`✅ ${cli.length} clientes`, 'ok'); }
+    if(svc.length) { await batchSet('servicos', svc); log(`✅ ${svc.length} serviços`, 'ok'); }
+    if(fin.length) { await batchSet('financeiro', fin); log(`✅ ${fin.length} financeiro`, 'ok'); }
+    log('🎉 PRONTO! Agora o sistema vai funcionar em qualquer browser.', 'ok');
+
+    // Verificar no Firebase
+    const snap = await getDocs(collection(db, 'agendamentos'));
+    log(`Firebase agora tem: ${snap.docs.length} agendamentos`, 'ok');
+  } catch(e) {
+    log('ERRO: ' + e.message, 'err');
+  }
+};
+
+// Auto verificar
+window.verificarTudo();
+</script>
+</body>
+</html>

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Sync Firefox → Firebase</title>
+<style>
+  body { font-family: monospace; background: #111; color: #eee; padding: 20px; }
+  h2 { color: #f0d070; }
+  .ok { color: #22c55e; } .err { color: #ef4444; } .warn { color: #f0d070; }
+  .btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: bold; margin: 6px; }
+  .verde { background: #22c55e; color: #000; }
+  .azul  { background: #3b82f6; color: #fff; }
+  pre { background: #1a1a1a; padding: 12px; border-radius: 8px; font-size: 13px; max-height: 500px; overflow-y: auto; white-space: pre-wrap; }
+  .stat { display:inline-block; background:#1a1a1a; border:1px solid #333; border-radius:8px; padding:12px 20px; margin:6px; text-align:center; }
+  .num { font-size:28px; font-weight:bold; color:#f0d070; }
+</style>
+</head>
+<body>
+<h2>🔄 Sincronizar Firefox → Firebase</h2>
+
+<div id="stats"></div>
+<pre id="log">Carregando...</pre>
+<button class="btn verde" onclick="sincronizar()">⬆️ Sincronizar TUDO para Firebase</button>
+<button class="btn azul" onclick="window.open('https://websalaov2.vercel.app','_blank')">🔁 Abrir Sistema</button>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, getDocs, writeBatch, doc }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const cfg = {
+  apiKey: 'AIzaSyBQcTGkiastpRAjGthU9nHy_uqpQjUMdu0',
+  authDomain: 'websalao-2a9d1.firebaseapp.com',
+  projectId: 'websalao-2a9d1',
+  storageBucket: 'websalao-2a9d1.firebasestorage.app',
+  messagingSenderId: '731611795568',
+  appId: '1:731611795568:web:103e44f116e152961024b5'
+};
+const db = getFirestore(initializeApp(cfg));
+const logEl = document.getElementById('log');
+
+function log(msg, t='') {
+  logEl.innerHTML += `<span class="${t}">${msg}</span>\n`;
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function getLocal(...keys) {
+  for (const k of keys) {
+    try {
+      const v = localStorage.getItem(k);
+      if (v) { const p = JSON.parse(v); if (Array.isArray(p) && p.length > 0) return p; }
+    } catch {}
+  }
+  return [];
+}
+
+async function batchSet(col, items) {
+  if (!items.length) return;
+  for (let i = 0; i < items.length; i += 499) {
+    const chunk = items.slice(i, i + 499);
+    const batch = writeBatch(db);
+    chunk.forEach((item, idx) => {
+      const id = String(item.id !== undefined ? item.id : (i+idx+1));
+      batch.set(doc(db, col, id), {...item, id: isNaN(Number(id)) ? id : Number(id)}, {merge:true});
+    });
+    await batch.commit();
+  }
+}
+
+// Mostrar o que foi encontrado
+logEl.innerHTML = '';
+const ag  = getLocal('agendamentos', 'shelly_agendamentos');
+const wpp = getLocal('wppMensagens', 'shelly_wppMensagens');
+const cli = getLocal('clientes', 'shelly_clientes');
+const svc = getLocal('servicos', 'shelly_servicos');
+const fin = getLocal('financeiro', 'shelly_financeiro');
+
+log(`Agendamentos: ${ag.length}`, ag.length > 0 ? 'ok' : 'warn');
+log(`WppMensagens: ${wpp.length}`, wpp.length > 0 ? 'ok' : 'warn');
+log(`Clientes: ${cli.length}`, cli.length > 0 ? 'ok' : 'warn');
+log(`Serviços: ${svc.length}`, svc.length > 0 ? 'ok' : 'warn');
+log(`Financeiro: ${fin.length}`, fin.length > 0 ? 'ok' : 'warn');
+
+if (ag.length > 0) {
+  log('', '');
+  log('Agendamentos encontrados:', 'warn');
+  ag.forEach(a => log(`  ID=${a.id} | ${a.clienteNome||'?'} | ${a.data||'?'} ${a.hora||''} | ${a.servicoNome||'?'} | status: ${a.status||'?'}`, ''));
+}
+
+const snap = await getDocs(collection(db, 'agendamentos'));
+log('', '');
+log(`Firebase atual: ${snap.docs.length} agendamentos`, 'warn');
+
+document.getElementById('stats').innerHTML = `
+  <div class="stat"><div class="num">${ag.length}</div><div>Ag. local</div></div>
+  <div class="stat"><div class="num">${wpp.length}</div><div>WPP local</div></div>
+  <div class="stat"><div class="num">${cli.length}</div><div>Clientes</div></div>
+  <div class="stat"><div class="num">${snap.docs.length}</div><div>Firebase</div></div>
+`;
+
+window.sincronizar = async function() {
+  log('', '');
+  log('Iniciando sincronização...', 'warn');
+  try {
+    await batchSet('agendamentos', ag); log(`✅ ${ag.length} agendamentos`, 'ok');
+    await batchSet('wppMensagens', wpp); log(`✅ ${wpp.length} mensagens WPP`, 'ok');
+    if(cli.length) { await batchSet('clientes', cli); log(`✅ ${cli.length} clientes`, 'ok'); }
+    if(svc.length) { await batchSet('servicos', svc); log(`✅ ${svc.length} serviços`, 'ok'); }
+    if(fin.length) { await batchSet('financeiro', fin); log(`✅ ${fin.length} financeiro`, 'ok'); }
+
+    const snap2 = await getDocs(collection(db, 'agendamentos'));
+    log('', '');
+    log(`🎉 PRONTO! Firebase agora tem ${snap2.docs.length} agendamentos`, 'ok');
+    log('Clique em "Abrir Sistema" para usar o sistema no Chrome normalmente.', 'ok');
+  } catch(e) {
+    log('ERRO: ' + e.message, 'err');
+  }
+};
+</script>
+</body>
+</html>

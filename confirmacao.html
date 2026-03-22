@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,7 +9,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     :root {
       --gold: #c9a84c;
@@ -43,7 +50,7 @@
       width: 100%;
       max-width: 420px;
       overflow: hidden;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
     }
 
     .card-header {
@@ -160,14 +167,18 @@
       transition: transform 0.12s, opacity 0.12s, filter 0.12s;
     }
 
-    .btn:active { transform: scale(0.97); }
+    .btn:active {
+      transform: scale(0.97);
+    }
 
     .btn-confirm {
       background: var(--green);
       color: #fff;
     }
 
-    .btn-confirm:hover { filter: brightness(1.1); }
+    .btn-confirm:hover {
+      filter: brightness(1.1);
+    }
 
     .btn-cancel {
       background: #1e1e1e;
@@ -175,7 +186,9 @@
       border: 1.5px solid var(--red);
     }
 
-    .btn-cancel:hover { background: #2a1010; }
+    .btn-cancel:hover {
+      background: #2a1010;
+    }
 
     /* Estados de feedback */
     .feedback {
@@ -186,7 +199,9 @@
       padding: 8px 0 4px;
     }
 
-    .feedback.show { display: flex; }
+    .feedback.show {
+      display: flex;
+    }
 
     .feedback-icon {
       font-size: 52px;
@@ -199,8 +214,13 @@
       margin-bottom: 8px;
     }
 
-    .feedback-title.green { color: var(--green); }
-    .feedback-title.red   { color: var(--red); }
+    .feedback-title.green {
+      color: var(--green);
+    }
+
+    .feedback-title.red {
+      color: var(--red);
+    }
 
     .feedback-msg {
       font-size: 14px;
@@ -226,7 +246,11 @@
       animation: spin 0.8s linear infinite;
     }
 
-    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
 
     .loading-text {
       font-size: 13px;
@@ -243,9 +267,13 @@
       gap: 10px;
     }
 
-    .error-wrap.show { display: flex; }
+    .error-wrap.show {
+      display: flex;
+    }
 
-    .error-icon { font-size: 44px; }
+    .error-icon {
+      font-size: 44px;
+    }
 
     .error-title {
       font-size: 17px;
@@ -276,12 +304,29 @@
       padding: 8px 0 4px;
       gap: 10px;
     }
-    .already-wrap.show { display: flex; }
-    .already-icon { font-size: 44px; }
-    .already-title { font-size: 17px; font-weight: 700; color: var(--gold); }
-    .already-msg { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+
+    .already-wrap.show {
+      display: flex;
+    }
+
+    .already-icon {
+      font-size: 44px;
+    }
+
+    .already-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--gold);
+    }
+
+    .already-msg {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
   </style>
 </head>
+
 <body>
 
   <div class="card">
@@ -353,13 +398,15 @@
         <div class="feedback" id="feedback-confirmado">
           <div class="feedback-icon">🎉</div>
           <div class="feedback-title green">Agendamento confirmado!</div>
-          <div class="feedback-msg">Ótimo! Sua presença está confirmada.<br>Aguardamos você no Studio Shelly Rodrigues.</div>
+          <div class="feedback-msg">Ótimo! Sua presença está confirmada.<br>Aguardamos você no Studio Shelly Rodrigues.
+          </div>
         </div>
 
         <div class="feedback" id="feedback-cancelado">
           <div class="feedback-icon">😔</div>
           <div class="feedback-title red">Agendamento cancelado</div>
-          <div class="feedback-msg">Seu agendamento foi cancelado.<br>Quando quiser, entre em contato para reagendar!</div>
+          <div class="feedback-msg">Seu agendamento foi cancelado.<br>Quando quiser, entre em contato para reagendar!
+          </div>
         </div>
 
         <!-- Já havia respondido -->
@@ -384,25 +431,25 @@
 
   <!-- Firebase -->
   <script type="module">
-    import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, doc, getDoc, updateDoc }
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs }
       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
-      apiKey:            "AIzaSyBQcTGkiastpRAjGthU9nHy_uqpQjUMdu0",
-      authDomain:        "websalao-2a9d1.firebaseapp.com",
-      projectId:         "websalao-2a9d1",
-      storageBucket:     "websalao-2a9d1.firebasestorage.app",
+      apiKey: "AIzaSyBQcTGkiastpRAjGthU9nHy_uqpQjUMdu0",
+      authDomain: "websalao-2a9d1.firebaseapp.com",
+      projectId: "websalao-2a9d1",
+      storageBucket: "websalao-2a9d1.firebasestorage.app",
       messagingSenderId: "731611795568",
-      appId:             "1:731611795568:web:103e44f116e152961024b5"
+      appId: "1:731611795568:web:103e44f116e152961024b5"
     };
 
     const app = initializeApp(firebaseConfig);
-    const db  = getFirestore(app);
+    const db = getFirestore(app);
 
     // Pega o id da URL
     const params = new URLSearchParams(window.location.search);
-    const agId   = params.get('id');
+    const agId = params.get('id');
 
     const $ = id => document.getElementById(id);
 
@@ -431,7 +478,7 @@
       if (!agId) { showError(); return; }
 
       try {
-        const ref  = doc(db, 'agendamentos', String(agId));
+        const ref = doc(db, 'agendamentos', String(agId));
         const snap = await getDoc(ref);
 
         if (!snap.exists()) { showError(); return; }
@@ -441,8 +488,8 @@
         // Preenche dados na tela
         $('info-cliente').textContent = ag.clienteNome || '—';
         $('info-servico').textContent = ag.servicoNome || '—';
-        $('info-data').textContent    = fmtDate(ag.data);
-        $('info-hora').textContent    = ag.hora || '—';
+        $('info-data').textContent = fmtDate(ag.data);
+        $('info-hora').textContent = ag.hora || '—';
 
         showLoading(false);
         showMain(true);
@@ -456,7 +503,7 @@
 
         // Expõe função global para os botões
         window._agRef = ref;
-        window._ag    = ag;
+        window._ag = ag;
 
       } catch (e) {
         console.error(e);
@@ -466,38 +513,51 @@
 
     function showAlready(status) {
       $('action-section').style.display = 'none';
-      const wrap   = $('already-section');
-      const icon   = $('already-icon');
-      const title  = $('already-title');
-      const msg    = $('already-msg');
+      const wrap = $('already-section');
+      const icon = $('already-icon');
+      const title = $('already-title');
+      const msg = $('already-msg');
 
       if (status === 'confirmado') {
-        icon.textContent  = '✅';
+        icon.textContent = '✅';
         title.textContent = 'Agendamento já confirmado';
         title.style.color = 'var(--green)';
-        msg.textContent   = 'Você já confirmou este agendamento. Até logo!';
+        msg.textContent = 'Você já confirmou este agendamento. Até logo!';
       } else {
-        icon.textContent  = '❌';
+        icon.textContent = '❌';
         title.textContent = 'Agendamento já cancelado';
         title.style.color = 'var(--red)';
-        msg.textContent   = 'Este agendamento já foi cancelado.';
+        msg.textContent = 'Este agendamento já foi cancelado.';
       }
       wrap.classList.add('show');
     }
 
-    window.responder = async function(novoStatus) {
+    window.responder = async function (novoStatus) {
       if (!window._agRef) return;
 
       // Desabilita botões para evitar duplo clique
       $('btn-confirmar').disabled = true;
-      $('btn-cancelar').disabled  = true;
+      $('btn-cancelar').disabled = true;
 
       try {
         await updateDoc(window._agRef, {
-          status:          novoStatus,
-          confirmadoEm:    new Date().toISOString(),
+          status: novoStatus,
+          confirmadoEm: new Date().toISOString(),
           confirmadoPeloCliente: true
         });
+
+        // Busca a wppMensagens se existir
+        try {
+          const q = query(collection(db, 'wppMensagens'), where('agId', '==', Number(agId)));
+          const snapW = await getDocs(q);
+          if (!snapW.empty) {
+            await updateDoc(snapW.docs[0].ref, {
+              resposta: novoStatus === 'confirmado' ? 'sim' : 'nao',
+              respostaEm: new Date().toISOString(),
+              lida: false // apita no painel do recepcionista!
+            });
+          }
+        } catch (err) { console.warn(err); }
 
         // Esconde botões, mostra feedback
         $('action-section').style.display = 'none';
@@ -506,7 +566,7 @@
       } catch (e) {
         console.error(e);
         $('btn-confirmar').disabled = false;
-        $('btn-cancelar').disabled  = false;
+        $('btn-cancelar').disabled = false;
         alert('Erro ao salvar resposta. Tente novamente.');
       }
     };
@@ -514,4 +574,5 @@
     init();
   </script>
 </body>
+
 </html>

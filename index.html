@@ -4120,9 +4120,15 @@
         let tagHtml = '';
         let simBtns = '';
 
-        if (m.resposta === 'sim') {
+        let resposta = m.resposta;
+        if (!resposta && agendamento) {
+          if (agendamento.status === 'confirmado') resposta = 'sim';
+          if (agendamento.status === 'cancelado') resposta = 'nao';
+        }
+
+        if (resposta === 'sim') {
           tagHtml = `<span class="wpp-tag-sim">✓ SIM</span>`;
-        } else if (m.resposta === 'nao') {
+        } else if (resposta === 'nao') {
           tagHtml = `<span class="wpp-tag-nao">✕ NÃO</span>`;
         } else {
           tagHtml = `<span class="wpp-tag-pending">⏳ Aguardando</span>`;
