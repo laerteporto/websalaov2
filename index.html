@@ -2684,9 +2684,16 @@
           }
         });
 
-        // Atualiza State e tela
-        State.data.agendamentos = doFb;
-        Storage.save('agendamentos', doFb);
+        // Merge: Firebase tem prioridade para status, mas mantém itens locais novos
+        const locaisAtual = State.data.agendamentos || [];
+        const merged = [...doFb];
+        locaisAtual.forEach(loc => {
+          if (!merged.find(f => String(f.id) === String(loc.id))) {
+            merged.push(loc); // mantém agendamento local ainda não sincronizado
+          }
+        });
+        State.data.agendamentos = merged;
+        Storage.save('agendamentos', merged);
         if (State.currentPage === 'agenda') renderAgendaGrid();
         if (document.getElementById('wpp-inbox-inner')) renderWppInboxCard();
         updateWppBadge();
@@ -2721,8 +2728,12 @@
             if (ant && ant.status !== ag.status) mudou = true;
           });
           if (mudou) {
-            State.data.agendamentos = doFb;
-            Storage.save('agendamentos', doFb);
+            // Merge: mantém itens locais não sincronizados
+            const locaisP = State.data.agendamentos || [];
+            const mergedP = [...doFb];
+            locaisP.forEach(loc => { if (!mergedP.find(f => String(f.id) === String(loc.id))) mergedP.push(loc); });
+            State.data.agendamentos = mergedP;
+            Storage.save('agendamentos', mergedP);
             if (State.currentPage === 'agenda') renderAgendaGrid();
             if (document.getElementById('wpp-inbox-inner')) renderWppInboxCard();
             updateWppBadge();
@@ -4307,6 +4318,8 @@
             }
           }
           registrarMensagemEnviada(novoAg, cli);
+          // Salva novo agendamento diretamente no Firebase (sem esperar batch)
+          if (window.FirebaseDB) window.FirebaseDB.fbSet('agendamentos', novoAg.id, novoAg).catch(()=>{});
           saveAll(); // salva wppMensagens no Firebase APÓS registrar
           updateWppBadge();
           if (document.getElementById('wpp-inbox-inner')) renderWppInboxCard();
