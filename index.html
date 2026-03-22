@@ -2095,7 +2095,7 @@
     import { initializeApp }
       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import {
-      getFirestore, collection, doc, getDocs,
+      getFirestore, collection, doc, getDoc, getDocs,
       setDoc, deleteDoc, onSnapshot, writeBatch
     }
       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -2136,7 +2136,7 @@
         await batch.commit();
       }
     }
-    window.FirebaseDB = { fbGetAll, fbSet, fbDelete, fbBatchSet, db, collection, onSnapshot };
+    window.FirebaseDB = { fbGetAll, fbSet, fbDelete, fbBatchSet, db, collection, onSnapshot, getDoc, setDoc, doc };
     window.dispatchEvent(new Event('firebase-ready'));
   </script>
 </head>
