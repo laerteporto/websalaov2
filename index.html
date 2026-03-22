@@ -2612,88 +2612,108 @@
       }
       if (!window.FirebaseDB) return false;
       try {
-        const { fbGetAll } = window.FirebaseDB;
-        const [clientes, servicos, financeiro, agendamentos, wppMensagens] = await Promise.all([
-          fbGetAll('clientes'), fbGetAll('servicos'), fbGetAll('financeiro'),
-          fbGetAll('agendamentos'), fbGetAll('wppMensagens')
-        ]);
-        if (clientes.length || agendamentos.length || servicos.length) {
-          // Merge agendamentos locais com Firebase para não perder dados
-          const locaisAg = State.data.agendamentos || [];
-          const mergedAg = [...locaisAg];
-          agendamentos.forEach(ag => {
-            const idx = mergedAg.findIndex(x => String(x.id) === String(ag.id));
-            if (idx >= 0) { mergedAg[idx] = { ...mergedAg[idx], ...ag }; }
-            else { mergedAg.push(ag); }
+        const { fbGetAll, fbBatchSet } = window.FirebaseDB;
+        const agFb = await fbGetAll('agendamentos');
+        const locais = State.data.agendamentos || [];
+
+        if (agFb.length === 0 && locais.length > 0) {
+          console.log('[Firebase] Subindo', locais.length, 'agendamentos locais...');
+          await fbBatchSet('agendamentos', locais);
+        } else if (agFb.length > 0) {
+          // Atualiza apenas STATUS dos agendamentos locais
+          locais.forEach((ag, idx) => {
+            const fb = agFb.find(f => String(f.id) === String(ag.id));
+            if (fb && fb.status !== ag.status) {
+              locais[idx].status = fb.status;
+              if (fb.confirmadoEm) locais[idx].confirmadoEm = fb.confirmadoEm;
+              if (fb.confirmadoPeloCliente) locais[idx].confirmadoPeloCliente = fb.confirmadoPeloCliente;
+            }
           });
-          // Sobe agendamentos locais que não estão no Firebase
-          const faltam = locaisAg.filter(l => !agendamentos.find(f => String(f.id) === String(l.id)));
-          if (faltam.length > 0) {
-            console.log('[Firebase] Subindo', faltam.length, 'agendamentos locais...');
-            fbBatchSet('agendamentos', faltam).catch(e => console.warn('[sync inicial]', e.message));
-          }
-          State.data = { clientes, servicos, financeiro, agendamentos: mergedAg, wppMensagens };
-          Storage.save('clientes', clientes);
-          Storage.save('servicos', servicos);
-          Storage.save('financeiro', financeiro);
-          Storage.save('agendamentos', mergedAg);
-          Storage.save('wppMensagens', wppMensagens);
-          return true;
+          Storage.save('agendamentos', locais);
+          // Sobe locais que faltam no Firebase
+          const faltam = locais.filter(l => !agFb.find(f => String(f.id) === String(l.id)));
+          if (faltam.length > 0) fbBatchSet('agendamentos', faltam).catch(() => {});
         }
-        return false;
+
+        const [clientes, servicos, financeiro, wppMensagens] = await Promise.all([
+          fbGetAll('clientes'), fbGetAll('servicos'), fbGetAll('financeiro'), fbGetAll('wppMensagens')
+        ]);
+        if (clientes.length) { State.data.clientes = clientes; Storage.save('clientes', clientes); }
+        if (servicos.length) { State.data.servicos = servicos; Storage.save('servicos', servicos); }
+        if (financeiro.length) { State.data.financeiro = financeiro; Storage.save('financeiro', financeiro); }
+        const locaisWpp = State.data.wppMensagens || [];
+        const mergedWpp = [...wppMensagens];
+        locaisWpp.forEach(l => { if (!mergedWpp.find(n => String(n.id) === String(l.id))) mergedWpp.push(l); });
+        State.data.wppMensagens = mergedWpp;
+        Storage.save('wppMensagens', mergedWpp);
+        return true;
       } catch (e) { console.warn('[Firebase] load:', e.message); return false; }
     }
 
-    // ─── POLLING (Firebase — intervalo + onSnapshot) ────────────────────────────
-    function processarAtualizacaoAgendamentos(novos) {
-      const prev = State.data.agendamentos || [];
-      novos.forEach(ag => {
-        const p = prev.find(x => String(x.id) === String(ag.id));
-        if (p && p.status !== ag.status) {
-          if (ag.status === 'confirmado') {
-            toast(`✅ ${(ag.clienteNome || '').split(' ')[0]} confirmou o agendamento!`, 'success');
-          } else if (ag.status === 'cancelado') {
-            toast(`❌ ${(ag.clienteNome || '').split(' ')[0]} cancelou o agendamento.`, 'error');
-          }
-          // Sincroniza wppMensagens
+
+    // ─── POLLING (Firebase — polling de status) ───────────────────────────────
+    function processarAtualizacaoAgendamentos(doFb) {
+      const locais = State.data.agendamentos || [];
+      let houveMudanca = false;
+      locais.forEach((ag, idx) => {
+        const fb = doFb.find(f => String(f.id) === String(ag.id));
+        if (fb && fb.status !== ag.status) {
+          houveMudanca = true;
+          if (fb.status === 'confirmado')
+            toast(`✅ ${(ag.clienteNome||'').split(' ')[0]} confirmou o agendamento!`, 'success');
+          else if (fb.status === 'cancelado')
+            toast(`❌ ${(ag.clienteNome||'').split(' ')[0]} cancelou o agendamento.`, 'error');
+          locais[idx].status = fb.status;
+          if (fb.confirmadoEm) locais[idx].confirmadoEm = fb.confirmadoEm;
+          if (fb.confirmadoPeloCliente) locais[idx].confirmadoPeloCliente = fb.confirmadoPeloCliente;
           if (State.data.wppMensagens) {
-            const mi = State.data.wppMensagens.findIndex(
-              m => String(m.agId) === String(ag.id)
-            );
+            const mi = State.data.wppMensagens.findIndex(m => String(m.agId) === String(ag.id));
             if (mi >= 0) {
-              State.data.wppMensagens[mi].resposta = ag.status === 'confirmado' ? 'sim' : 'nao';
-              State.data.wppMensagens[mi].respostaEm = ag.confirmadoEm || new Date().toISOString();
+              State.data.wppMensagens[mi].resposta = fb.status === 'confirmado' ? 'sim' : 'nao';
+              State.data.wppMensagens[mi].respostaEm = fb.confirmadoEm || new Date().toISOString();
               State.data.wppMensagens[mi].lida = false;
               Storage.save('wppMensagens', State.data.wppMensagens);
             }
           }
         }
       });
-      State.data.agendamentos = novos;
-      Storage.save('agendamentos', novos);
-      if (State.currentPage === 'agenda') renderAgendaGrid();
-      if (document.getElementById('wpp-inbox-inner')) renderWppInboxCard();
-      updateWppBadge();
+      if (houveMudanca) {
+        State.data.agendamentos = locais;
+        Storage.save('agendamentos', locais);
+        if (State.currentPage === 'agenda') renderAgendaGrid();
+        if (document.getElementById('wpp-inbox-inner')) renderWppInboxCard();
+        if (State.currentPage === 'whatsapp') renderWppConfig(document.getElementById('page-content'));
+        updateWppBadge();
+      }
     }
 
     function startPolling() {
       if (!window.FirebaseDB) return;
-      const { db, collection, onSnapshot, fbGetAll } = window.FirebaseDB;
+      const { db, collection, onSnapshot, fbGetAll, fbBatchSet } = window.FirebaseDB;
 
-      // 1) onSnapshot para wppMensagens
+      // onSnapshot: escuta mudancas de status no Firebase
+      onSnapshot(collection(db, 'agendamentos'), snap => {
+        const doFb = snap.docs.map(d => {
+          const dado = d.data();
+          const numId = isNaN(d.id) ? dado.id : Number(d.id);
+          return { ...dado, id: numId !== undefined ? numId : d.id };
+        });
+        processarAtualizacaoAgendamentos(doFb);
+        const locais = State.data.agendamentos || [];
+        const faltam = locais.filter(l => !doFb.find(f => String(f.id) === String(l.id)));
+        if (faltam.length > 0) fbBatchSet('agendamentos', faltam).catch(() => {});
+      });
+
+      // onSnapshot wppMensagens
       onSnapshot(collection(db, 'wppMensagens'), snap => {
         const novas = snap.docs.map(d => {
           const data = d.data();
           const numId = isNaN(d.id) ? data.id : Number(d.id);
           return { ...data, id: numId !== undefined ? numId : d.id };
         });
-        // Merge: preserva mensagens locais que ainda não foram salvas no Firebase
         const locais = State.data.wppMensagens || [];
         const merged = [...novas];
-        locais.forEach(local => {
-          const jaExiste = novas.find(n => String(n.id) === String(local.id) || String(n.agId) === String(local.agId));
-          if (!jaExiste) merged.push(local); // mantém mensagem local ainda não sincronizada
-        });
+        locais.forEach(l => { if (!merged.find(n => String(n.id) === String(l.id))) merged.push(l); });
         State.data.wppMensagens = merged;
         Storage.save('wppMensagens', merged);
         updateWppBadge();
@@ -2701,75 +2721,11 @@
         if (State.currentPage === 'whatsapp') renderWppConfig(document.getElementById('page-content'));
       });
 
-      // 2) onSnapshot para agendamentos — merge com localStorage para não perder dados locais
-      onSnapshot(collection(db, 'agendamentos'), snap => {
-        const doFb = snap.docs.map(d => {
-          const dado = d.data();
-          const numId = isNaN(d.id) ? dado.id : Number(d.id);
-          return { ...dado, id: numId !== undefined ? numId : d.id };
-        });
-        // Pega agendamentos locais e faz merge: Firebase tem prioridade para status
-        const locais = State.data.agendamentos || [];
-        const merged = [...locais];
-        doFb.forEach(ag => {
-          const idx = merged.findIndex(x => String(x.id) === String(ag.id));
-          if (idx >= 0) {
-            // Atualiza apenas campos que vieram do Firebase (ex: status, confirmadoEm)
-            merged[idx] = { ...merged[idx], ...ag };
-          } else {
-            merged.push(ag);
-          }
-        });
-        // Se Firebase tem algum agendamento, sobe os locais que faltam
-        if (doFb.length > 0) {
-          const faltam = locais.filter(l => !doFb.find(f => String(f.id) === String(l.id)));
-          if (faltam.length > 0) {
-            console.log('[Firebase] Sincronizando', faltam.length, 'agendamentos locais para o Firebase...');
-            fbBatchSet('agendamentos', faltam).catch(e => console.warn('[sync]', e.message));
-          }
-        }
-        processarAtualizacaoAgendamentos(merged);
-      });
-
-      // 3) Polling de segurança a cada 15s — garante atualização mesmo se
-      //    o onSnapshot falhar ou não disparar por algum motivo
+      // Polling a cada 10s como seguranca adicional
       setInterval(async () => {
-        try {
-          const { fbGetAll } = window.FirebaseDB;
-          const [doFbAg, novasMsgs] = await Promise.all([
-            fbGetAll('agendamentos'),
-            fbGetAll('wppMensagens')
-          ]);
-          // Merge agendamentos locais com Firebase
-          const locais = State.data.agendamentos || [];
-          const mergedAg = [...locais];
-          doFbAg.forEach(ag => {
-            const idx = mergedAg.findIndex(x => String(x.id) === String(ag.id));
-            if (idx >= 0) { mergedAg[idx] = { ...mergedAg[idx], ...ag }; }
-            else { mergedAg.push(ag); }
-          });
-          // Sobe locais que faltam no Firebase
-          if (doFbAg.length > 0) {
-            const faltam = locais.filter(l => !doFbAg.find(f => String(f.id) === String(l.id)));
-            if (faltam.length > 0) fbBatchSet('agendamentos', faltam).catch(() => {});
-          }
-          processarAtualizacaoAgendamentos(mergedAg);
-          // Atualiza wppMensagens mantendo itens locais não sincronizados
-          const locais = State.data.wppMensagens || [];
-          const merged = [...novasMsgs];
-          locais.forEach(local => {
-            const jaExiste = novasMsgs.find(n => String(n.id) === String(local.id) || String(n.agId) === String(local.agId));
-            if (!jaExiste) merged.push(local);
-          });
-          State.data.wppMensagens = merged;
-          Storage.save('wppMensagens', merged);
-          updateWppBadge();
-          if (document.getElementById('wpp-inbox-inner')) renderWppInboxCard();
-          if (State.currentPage === 'whatsapp') renderWppConfig(document.getElementById('page-content'));
-        } catch(e) { /* silencioso */ }
-      }, 15000);
+        try { const doFb = await fbGetAll('agendamentos'); processarAtualizacaoAgendamentos(doFb); } catch(e) {}
+      }, 10000);
     }
-
     // ─── SYNC (no-ops — Firebase cuida) ─────────────────────────────────────────
     async function syncFromBackend() { }
     function syncBackend() { saveAll(); }
