@@ -4057,7 +4057,15 @@
       // Próximo agendamento
       const hojeOrdenado = agHoje.filter(a=>a.status!=='cancelado').sort((a,b)=>a.hora.localeCompare(b.hora));
       const agoraMin = now.getHours()*60+now.getMinutes();
-      const proximo  = hojeOrdenado.find(a=>{ const [h,m]=a.hora.split(':'); return parseInt(h)*60+parseInt(m) >= agoraMin; });
+      // Prioridade 1: pendente/aguardando que ainda não passou
+      // Prioridade 2: qualquer confirmado que ainda não passou
+      // Prioridade 3: pendente/aguardando mesmo que já passou (ainda precisa de ação)
+      // Prioridade 4: último confirmado do dia (já passou, mas mostra o último)
+      const toMin = a => { const [h,m]=(a.hora||'00:00').split(':'); return parseInt(h)*60+parseInt(m); };
+      const pendentesHoje = hojeOrdenado.filter(a=>a.status==='pendente'||a.status==='aguardando');
+      const proximoPendente = pendentesHoje.find(a=>toMin(a)>=agoraMin) || pendentesHoje[0];
+      const proximoFuturo  = hojeOrdenado.find(a=>toMin(a)>=agoraMin);
+      const proximo = proximoPendente || proximoFuturo || hojeOrdenado[hojeOrdenado.length-1] || null;
 
       // Serviços populares (todo período)
       const svcMap = {};
@@ -4103,7 +4111,9 @@
           <div style="position:absolute;top:0;right:0;width:160px;height:160px;background:var(--gold-glow);border-radius:50%;transform:translate(40px,-40px);pointer-events:none;"></div>
           <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;">
             <div>
-              <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;">&#128336; Próximo atendimento</div>
+              <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;">
+                ${proximoPendente ? '&#9203; Aguardando confirmação' : proximoFuturo ? '&#128336; Próximo atendimento' : hojeOrdenado.length ? '&#10003; Último atendimento do dia' : '&#128336; Próximo atendimento'}
+              </div>
               <div style="font-family:'Cormorant Garamond',serif;font-size:15px;color:var(--text-muted);">${weekday}, ${dataFull}</div>
             </div>
             <button class="btn btn-primary btn-sm" onclick="navigate('agenda')" style="flex-shrink:0;">Ver Agenda</button>
@@ -4129,8 +4139,9 @@
           </div>` : `
           <div style="text-align:center;padding:28px 0;">
             <div style="font-size:36px;margin-bottom:10px;">&#10003;</div>
-            <div style="font-size:15px;font-weight:600;color:var(--text);">Tudo em dia!</div>
-            <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">Nenhum atendimento pendente para hoje</div>
+            <div style="font-size:15px;font-weight:600;color:var(--text);">Nenhum atendimento hoje</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">Adicione agendamentos na agenda</div>
+            <button class="btn btn-primary btn-sm" onclick="openAgModal()" style="margin-top:14px;">+ Agendar agora</button>
           </div>`}
         </div>
 
@@ -4196,14 +4207,14 @@
           ${agHoje.sort((a,b)=>a.hora.localeCompare(b.hora)).map((a,idx)=>{
             const isProx = proximo && proximo.id === a.id;
             const isCancelado = a.status==='cancelado';
-            const cor = a.status==='confirmado' ? 'var(--green)' : a.status==='cancelado' ? 'var(--red)' : 'var(--gold)';
+            const cor = a.status==='confirmado' ? 'var(--green)' : a.status==='cancelado' ? 'var(--red)' : a.status==='aguardando' ? '#25D366' : 'var(--gold)';
             return `<div style="display:flex;align-items:center;gap:0;padding:0;border-bottom:1px solid var(--border-soft);${isProx?'background:rgba(184,145,106,0.04);':''};transition:background .15s;"
               onmouseover="this.style.background='rgba(184,145,106,0.03)'" onmouseout="this.style.background='${isProx?'rgba(184,145,106,0.04)':'transparent'}'">
 
               <!-- Hora -->
               <div style="min-width:90px;padding:18px 20px;text-align:center;border-right:1px solid var(--border-soft);">
                 <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:${cor};line-height:1;">${a.hora}</div>
-                ${isProx?'<div style="font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;margin-top:3px;">Próximo</div>':''}
+                ${isProx && (proximoFuturo || proximoPendente)?'<div style="font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;margin-top:3px;">'+(a.status==='pendente'||a.status==='aguardando'?'Pendente':'Próximo')+'</div>':''}
               </div>
 
               <!-- Avatar + info -->
