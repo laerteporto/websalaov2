@@ -1921,10 +1921,11 @@
     }
 
     .wpp-inbox-item {
-      display: flex;
+      display: grid;
+      grid-template-columns: 44px 1fr auto;
       align-items: center;
       gap: 12px;
-      padding: 13px 16px;
+      padding: 12px 16px;
       border-bottom: 1px solid var(--border-soft);
       transition: background 0.15s;
       cursor: pointer;
@@ -1939,28 +1940,31 @@
     }
 
     .wpp-avatar {
-      width: 38px;
-      height: 38px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       background: linear-gradient(135deg, #1a6e31, #25D366);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 700;
       color: #fff;
       flex-shrink: 0;
     }
 
     .wpp-inbox-info {
-      flex: 1;
       min-width: 0;
+      overflow: hidden;
     }
 
     .wpp-inbox-name {
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 600;
       color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .wpp-inbox-msg {
@@ -1969,7 +1973,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      margin-top: 2px;
+      margin-top: 3px;
     }
 
     .wpp-inbox-right {
@@ -1978,11 +1982,13 @@
       align-items: flex-end;
       gap: 5px;
       flex-shrink: 0;
+      min-width: 90px;
     }
 
     .wpp-inbox-time {
-      font-size: 10px;
+      font-size: 11px;
       color: var(--text-muted);
+      white-space: nowrap;
     }
 
     .wpp-tag-sim {
@@ -4606,92 +4612,100 @@
     function renderWppInboxCard() {
       const el = document.getElementById('wpp-inbox-inner');
       if (!el) return;
-      const msgs = (State.data.wppMensagens || []).slice().sort((a, b) => new Date(b.enviadoEm || 0) - new Date(a.enviadoEm || 0));
+      const msgs = (State.data.wppMensagens || []).slice()
+        .sort((a, b) => new Date(b.enviadoEm || 0) - new Date(a.enviadoEm || 0));
 
       if (!msgs.length) {
-        el.innerHTML = `<div class="empty-state" style="padding:24px 0;">
-      <div class="empty-icon">📭</div>
-      <h3>Nenhuma mensagem enviada</h3>
-      <p>Envie confirmações WhatsApp nos agendamentos.</p>
-    </div>`;
+        el.innerHTML = `<div class="empty-state" style="padding:32px 0;">
+          <div class="empty-icon" style="font-size:36px;margin-bottom:10px;">&#128237;</div>
+          <h3 style="font-size:15px;">Nenhuma mensagem enviada</h3>
+          <p style="font-size:13px;">Envie confirma&#231;&#245;es WhatsApp nos agendamentos.</p>
+        </div>`;
         updateInboxBadge();
         return;
       }
 
+      // Garantir que _wppInboxLimite seja um número válido
+      if (!window._wppInboxLimite || window._wppInboxLimite < 8) window._wppInboxLimite = 8;
+      const limite = window._wppInboxLimite;
+
       const pendentes = msgs.filter(m => !m.lida);
       let html = '';
 
-      if (pendentes.length) {
-        html += `<div style="padding:10px 16px;font-size:12px;font-weight:700;color:#25D366;
-          letter-spacing:0.04em;text-transform:uppercase;
-          background:rgba(37,211,102,0.07);
-          border-bottom:1px solid rgba(37,211,102,0.12);
-          display:flex;align-items:center;gap:8px;">
-          <span style="display:inline-flex;width:8px;height:8px;background:#25D366;border-radius:50%;animation:pulseBadge 2s ease infinite;"></span>
+      // Barra de status no topo
+      html += `<div style="display:flex;align-items:center;justify-content:space-between;
+        padding:10px 16px;font-size:12px;font-weight:600;
+        background:rgba(37,211,102,0.07);border-bottom:1px solid rgba(37,211,102,0.12);">
+        <span style="display:flex;align-items:center;gap:8px;color:#25D366;text-transform:uppercase;letter-spacing:.04em;">
+          <span style="width:8px;height:8px;border-radius:50%;background:#25D366;display:inline-block;animation:pulseBadge 2s ease infinite;"></span>
           ${pendentes.length} aguardando resposta
-        </div>`;
-      }
+        </span>
+        <span style="color:var(--text-muted);font-weight:400;font-size:11px;">${msgs.length} mensagens no total</span>
+      </div>`;
 
-      const _limite = window._wppInboxLimite || 8;
       html += `<div class="wpp-inbox">`;
-      msgs.slice(0, _limite).forEach(m => {
+      msgs.slice(0, limite).forEach(m => {
         const agendamento = State.data.agendamentos.find(a => a.id === m.agId);
-        const statusAg = agendamento?.status || 'pendente';
-        let tagHtml = '';
-        let simBtns = '';
-
         let resposta = m.resposta;
         if (!resposta && agendamento) {
           if (agendamento.status === 'confirmado') resposta = 'sim';
           if (agendamento.status === 'cancelado') resposta = 'nao';
         }
 
+        let tagHtml = '';
+        let simBtns = '';
         if (resposta === 'sim') {
-          tagHtml = `<span class="wpp-tag-sim">✓ SIM</span>`;
+          tagHtml = `<span class="wpp-tag-sim" style="font-size:12px;padding:4px 12px;">&#10003; SIM</span>`;
         } else if (resposta === 'nao') {
-          tagHtml = `<span class="wpp-tag-nao">✕ NÃO</span>`;
+          tagHtml = `<span class="wpp-tag-nao" style="font-size:12px;padding:4px 12px;">&#10005; N&#195;O</span>`;
         } else {
-          tagHtml = `<span class="wpp-tag-pending">⏳ Aguardando</span>`;
-          simBtns = `
-        <div style="display:flex;gap:5px;margin-top:6px;">
-          <button class="btn btn-success btn-sm" style="padding:3px 10px;font-size:11px;" onclick="processarResposta(${m.id},'sim')">✓ SIM</button>
-          <button class="btn btn-danger btn-sm" style="padding:3px 10px;font-size:11px;" onclick="processarResposta(${m.id},'nao')">✕ NÃO</button>
-        </div>`;
+          tagHtml = `<span class="wpp-tag-pending" style="font-size:12px;padding:4px 12px;">&#9203; Aguard.</span>`;
+          simBtns = `<div style="display:flex;gap:5px;margin-top:6px;">
+            <button class="btn btn-success btn-sm" style="padding:4px 12px;font-size:12px;min-height:30px;" onclick="processarResposta(${m.id},'sim')">&#10003; SIM</button>
+            <button class="btn btn-danger btn-sm" style="padding:4px 12px;font-size:12px;min-height:30px;" onclick="processarResposta(${m.id},'nao')">&#10005; N&#195;O</button>
+          </div>`;
         }
 
         const enviadoAt = new Date(m.enviadoEm);
         const timeStr = enviadoAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         const dateStr = enviadoAt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        const unreadDot = !m.lida ? '<span style="display:inline-block;width:7px;height:7px;background:#25D366;border-radius:50%;margin-left:5px;vertical-align:middle;flex-shrink:0;"></span>' : '';
+        const borderStyle = !m.lida ? 'border-left:3px solid #25D366;background:rgba(37,211,102,0.04);' : 'border-left:3px solid transparent;';
 
-        html += `<div class="wpp-inbox-item" style="padding:14px 16px;${!m.lida ? 'background:rgba(37,211,102,0.04);border-left:3px solid #25D366;' : 'border-left:3px solid transparent;'}transition:background .15s;">
-      <div class="wpp-avatar" style="width:44px;height:44px;font-size:16px;font-weight:700;">${m.clienteNome.charAt(0)}</div>
-      <div class="wpp-inbox-info" style="flex:1;min-width:0;">
-        <div class="wpp-inbox-name" style="font-size:14px;font-weight:600;">${m.clienteNome.split(' ').slice(0, 2).join(' ')} ${!m.lida ? '<span style="display:inline-block;width:7px;height:7px;background:#25D366;border-radius:50%;margin-left:4px;vertical-align:middle;"></span>' : ''}</div>
-        <div class="wpp-inbox-msg" style="font-size:12px;margin-top:3px;">&#128197; ${fmtDate(m.data)} &middot; ${m.hora} &mdash; ${m.servico}</div>
-        ${simBtns}
-      </div>
-      <div class="wpp-inbox-right" style="align-items:flex-end;gap:6px;">
-        <span class="wpp-inbox-time">${dateStr} ${timeStr}</span>
-        ${tagHtml}
-      </div>
-    </div>`;
+        html += `<div class="wpp-inbox-item" style="${borderStyle}">
+          <div class="wpp-avatar">${m.clienteNome.charAt(0).toUpperCase()}</div>
+          <div class="wpp-inbox-info">
+            <div class="wpp-inbox-name">${m.clienteNome.split(' ').slice(0,2).join(' ')}${unreadDot}</div>
+            <div class="wpp-inbox-msg">&#128197; ${fmtDate(m.data)} &#183; ${m.hora} &mdash; ${m.servico}</div>
+            ${simBtns}
+          </div>
+          <div class="wpp-inbox-right">
+            <span class="wpp-inbox-time">${dateStr} ${timeStr}</span>
+            ${tagHtml}
+          </div>
+        </div>`;
       });
       html += `</div>`;
 
-      const _lim = window._wppInboxLimite || 8;
-      if (msgs.length > _lim) {
-        html += `<button onclick="window._wppInboxLimite=(_lim+16);renderWppInboxCard();"
-          style="width:100%;padding:12px;background:rgba(255,255,255,0.03);border:1px dashed var(--border);
-          border-radius:0 0 var(--radius) var(--radius);color:var(--text-muted);font-size:13px;cursor:pointer;
-          transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.07)'"
-          onmouseout="this.style.background='rgba(255,255,255,0.03)'">
-          ↓ Ver mais ${msgs.length - _lim} mensagens
+      // Botão Ver mais / Recolher
+      const restante = msgs.length - limite;
+      if (restante > 0) {
+        html += `<button onclick="window._wppInboxLimite = ${limite + 20}; renderWppInboxCard();"
+          style="width:100%;padding:14px;display:flex;align-items:center;justify-content:center;gap:8px;
+          background:var(--bg-card2);border:none;border-top:1px solid var(--border-soft);
+          color:var(--gold-light);font-family:'Jost',sans-serif;font-size:13px;font-weight:600;
+          cursor:pointer;transition:background .2s;border-radius:0 0 var(--radius) var(--radius);"
+          onmouseover="this.style.background='var(--gold-glow)'"
+          onmouseout="this.style.background='var(--bg-card2)'">
+          <span style="font-size:16px;">&#8595;</span> Ver mais ${restante} mensagens
         </button>`;
-      } else if ((window._wppInboxLimite || 8) > 8) {
-        html += `<button onclick="window._wppInboxLimite=8;renderWppInboxCard();"
-          style="width:100%;padding:10px;background:transparent;border:none;
-          color:var(--text-muted);font-size:12px;cursor:pointer;">
-          ↑ Recolher
+      } else if (limite > 8) {
+        html += `<button onclick="window._wppInboxLimite = 8; renderWppInboxCard();"
+          style="width:100%;padding:12px;display:flex;align-items:center;justify-content:center;gap:6px;
+          background:transparent;border:none;border-top:1px solid var(--border-soft);
+          color:var(--text-muted);font-family:'Jost',sans-serif;font-size:12px;cursor:pointer;
+          border-radius:0 0 var(--radius) var(--radius);">
+          <span>&#8593;</span> Recolher
         </button>`;
       }
 
