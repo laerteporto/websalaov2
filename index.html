@@ -2088,6 +2088,90 @@
       gap: 8px;
       flex-wrap: wrap;
     }
+
+  /* ═══════════════════════════════════════════════════════════
+     MELHORIAS MOBILE — WebSalão v2
+  ═══════════════════════════════════════════════════════════ */
+  @media (max-width: 768px) {
+    .topbar { height: 58px; padding: 0 14px; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+    .topbar-title h1 { font-size: 15px !important; font-weight: 600; }
+    .btn-menu { width: 42px !important; height: 42px !important; font-size: 20px !important; border-radius: 12px !important; }
+
+    .bottom-nav { height: 68px !important; padding-bottom: env(safe-area-inset-bottom,0px) !important; box-shadow: 0 -2px 16px rgba(0,0,0,.10) !important; }
+    .bottom-nav-item { border-radius: 14px !important; margin: 6px 3px !important; position: relative; }
+    .bottom-nav-item::after { content:''; position:absolute; top:0; left:15%; right:15%; height:2.5px; background:var(--gold); border-radius:0 0 4px 4px; transform:scaleX(0); transition:transform .2s; }
+    .bottom-nav-item.active::after { transform:scaleX(1); }
+    .bottom-nav-item:active { opacity: .8; }
+    .bottom-nav-item .bn-icon { font-size: 22px !important; }
+    .bottom-nav-item .bn-label { font-size: 10px !important; font-weight: 600 !important; letter-spacing:.3px; }
+    .bottom-nav-item.active .bn-label { color: var(--gold) !important; font-weight: 700 !important; }
+
+    .page-content { padding: 12px 12px calc(80px + env(safe-area-inset-bottom,0px)) !important; }
+
+    .kpi-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; margin-bottom: 14px !important; }
+    .kpi-card { padding: 14px 12px !important; border-radius: 14px !important; border-left: 3px solid var(--kpi-color, var(--gold)) !important; }
+    .kpi-icon { width: 34px !important; height: 34px !important; font-size: 16px !important; margin-bottom: 10px !important; border-radius: 10px !important; }
+    .kpi-value { font-size: 18px !important; }
+    .kpi-label { font-size: 11px !important; }
+    .kpi-change { font-size: 10px !important; margin-top: 5px !important; }
+
+    .card { padding: 14px !important; border-radius: 16px !important; }
+    .card-header { margin-bottom: 14px !important; flex-wrap: wrap; gap: 10px; }
+    .card-title { font-size: 15px !important; }
+
+    .grid-2, .grid-3, .grid-65-35 { grid-template-columns: 1fr !important; gap: 12px !important; }
+    .mb-20, .mt-20 { margin-top: 12px !important; margin-bottom: 12px !important; }
+
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 10px; }
+    table { font-size: 12px !important; min-width: 420px; }
+    thead th { padding: 8px 10px !important; font-size: 10px !important; }
+    tbody td { padding: 10px !important; }
+
+    .btn { min-height: 42px !important; padding: 10px 16px !important; font-size: 13px !important; border-radius: 10px !important; }
+    .btn-sm { min-height: 36px !important; padding: 7px 13px !important; font-size: 12px !important; }
+    .btn-icon { min-height: 36px !important; width: 36px !important; height: 36px !important; padding: 0 !important; border-radius: 10px !important; }
+
+    .form-control { padding: 12px 14px !important; font-size: 15px !important; border-radius: 10px !important; min-height: 48px !important; }
+    .form-row { grid-template-columns: 1fr !important; gap: 10px !important; }
+    .form-label { font-size: 12px !important; }
+    .form-group { margin-bottom: 12px !important; }
+
+    .modal-overlay { align-items: flex-end !important; padding: 0 !important; }
+    .modal { width: 100% !important; max-width: 100% !important; border-radius: 22px 22px 0 0 !important; padding: 20px 16px calc(24px + env(safe-area-inset-bottom,0px)) !important; max-height: 92dvh !important; }
+    .modal::before { content:''; display:block; width:40px; height:4px; background:var(--border); border-radius:4px; margin:0 auto 16px; }
+    .modal-title { font-size: 18px !important; }
+    .modal-footer { flex-wrap: wrap !important; gap: 8px !important; }
+    .modal-footer .btn { flex: 1 !important; justify-content: center !important; min-width: 120px !important; }
+
+    .agenda-day-item { border-radius: 16px !important; box-shadow: 0 2px 8px rgba(0,0,0,.06) !important; overflow: hidden !important; margin-bottom: 10px; }
+    .agenda-day-header { padding: 14px 16px !important; gap: 14px !important; }
+    .agenda-day-num { font-size: 32px !important; min-width: 40px !important; }
+    .agenda-day-name { font-size: 14px !important; font-weight: 600 !important; text-transform: capitalize !important; }
+    .agenda-day-count { font-size: 12px !important; margin-top: 2px !important; }
+    .agenda-day-events { padding: 10px 12px 12px !important; gap: 8px !important; }
+    .agenda-list-event { padding: 12px 12px !important; border-radius: 12px !important; gap: 12px !important; border-left-width: 4px !important; }
+    .agenda-list-event .ev-hora { font-size: 19px !important; min-width: 52px !important; font-weight: 600 !important; }
+    .agenda-list-event .ev-nome { font-size: 14px !important; font-weight: 600 !important; }
+    .agenda-list-event .ev-svc { font-size: 12px !important; margin-top: 3px !important; }
+    .agenda-add-btn { margin: 6px 12px 10px !important; padding: 13px !important; font-size: 13px !important; border-radius: 12px !important; min-height: 46px !important; }
+
+    .agenda-nav { display:flex !important; align-items:center !important; justify-content:space-between !important; gap:8px !important; padding:10px 0 14px !important; flex-wrap:nowrap !important; }
+    #agenda-week-title { font-size: 13px !important; font-weight: 600 !important; text-align: center !important; flex: 1 !important; }
+
+    .empty-state { padding: 32px 16px !important; text-align: center !important; }
+
+    .wpp-inbox-item { padding: 14px 14px !important; }
+    .wpp-avatar { width: 44px !important; height: 44px !important; font-size: 16px !important; }
+
+    ::-webkit-scrollbar { width: 0 !important; height: 0 !important; }
+  }
+
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    @media (max-width: 768px) {
+      .bottom-nav { padding-bottom: env(safe-area-inset-bottom) !important; height: calc(68px + env(safe-area-inset-bottom)) !important; }
+      .page-content { padding-bottom: calc(80px + env(safe-area-inset-bottom)) !important; }
+    }
+  }
   </style>
   </style>
   <!-- Firebase SDK -->
@@ -3992,107 +4076,99 @@
     function renderFinanceiro(container) {
       const now = new Date();
       const thisMonth = localMonthStr(now);
-
+      const rec = State.data.financeiro.filter(f=>f.tipo==='receita'&&f.data.startsWith(thisMonth)).reduce((s,f)=>s+f.valor,0);
+      const desp = State.data.financeiro.filter(f=>f.tipo==='despesa'&&f.data.startsWith(thisMonth)).reduce((s,f)=>s+f.valor,0);
+      const saldo = rec - desp;
       container.innerHTML = `
-    <div class="page-section">
-      <div id="fin-summary" class="stats-row mb-20"></div>
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Lançamentos</div>
-          <button class="btn btn-primary btn-sm" onclick="openFinModal()">+ Novo Lançamento</button>
+      <div class="kpi-grid page-section" style="--kpi-color:var(--green)">
+        <div class="kpi-card" style="--kpi-color:var(--green)">
+          <div class="kpi-icon">&#128176;</div>
+          <div class="kpi-value">${fmtMoney(rec)}</div>
+          <div class="kpi-label">Receitas este m&#234;s</div>
         </div>
-        <div class="filters-bar">
-          <div class="filter-chip active" id="fc-todos" onclick="finSetFilter('tipo','todos',this)">Todos</div>
-          <div class="filter-chip" id="fc-receita" onclick="finSetFilter('tipo','receita',this)">Receitas</div>
-          <div class="filter-chip" id="fc-despesa" onclick="finSetFilter('tipo','despesa',this)">Despesas</div>
-          <div style="margin-left:auto; display:flex; gap:8px;">
-            <select class="form-control" style="width:auto;padding:6px 10px;font-size:12px;" onchange="finSetPeriodo(this.value)">
-              <option value="mes">Este mês</option>
-              <option value="ultimos3">Últimos 3 meses</option>
+        <div class="kpi-card" style="--kpi-color:var(--red)">
+          <div class="kpi-icon">&#128197;</div>
+          <div class="kpi-value">${fmtMoney(desp)}</div>
+          <div class="kpi-label">Despesas este m&#234;s</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:${saldo>=0?'var(--green)':'var(--red)'}">
+          <div class="kpi-icon">&#9878;&#65039;</div>
+          <div class="kpi-value" style="color:${saldo>=0?'var(--green)':'var(--red)'}">${fmtMoney(saldo)}</div>
+          <div class="kpi-label">Saldo do m&#234;s</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--gold)">
+          <div class="kpi-icon">&#128203;</div>
+          <div class="kpi-value">${State.data.financeiro.filter(f=>f.data.startsWith(thisMonth)).length}</div>
+          <div class="kpi-label">Lan&#231;amentos</div>
+        </div>
+      </div>
+      <div class="card page-section">
+        <div class="card-header">
+          <div><div class="card-title">Lan&#231;amentos</div></div>
+          <div class="flex gap-8" style="flex-wrap:wrap;">
+            <select class="form-control" id="fin-tipo" onchange="renderFinTable()" style="min-width:110px;min-height:36px;padding:6px 10px;">
+              <option value="todos">Todos</option>
+              <option value="receita">Receitas</option>
+              <option value="despesa">Despesas</option>
+            </select>
+            <select class="form-control" id="fin-periodo" onchange="renderFinTable()" style="min-width:130px;min-height:36px;padding:6px 10px;">
+              <option value="mes">Este m&#234;s</option>
               <option value="todos">Todos</option>
             </select>
+            <button class="btn btn-primary btn-sm" onclick="openFinModal()">+ Lan&#231;amento</button>
           </div>
         </div>
-        <div class="table-wrap" id="fin-table"></div>
-      </div>
-    </div>
-  `;
-
+        <div id="fin-list-wrap"></div>
+      </div>`;
       renderFinTable();
-    }
-
-    function finSetFilter(key, val, el) {
-      finFilter[key] = val;
-      document.querySelectorAll('#fc-todos,#fc-receita,#fc-despesa').forEach(e => e.classList.remove('active'));
-      if (el) el.classList.add('active');
-      renderFinTable();
-    }
-
-    function finSetPeriodo(v) { finFilter.periodo = v; renderFinTable(); }
-
-    function getFinFiltered() {
-      const now = new Date();
-      const thisMonth = localMonthStr(now);
-      let data = [...State.data.financeiro].sort((a, b) => b.data.localeCompare(a.data));
-
-      if (finFilter.periodo === 'mes') data = data.filter(f => f.data.startsWith(thisMonth));
-      else if (finFilter.periodo === 'ultimos3') {
-        const m3 = localMonthStr(new Date(now.getFullYear(), now.getMonth() - 2, 1));
-        data = data.filter(f => f.data >= m3);
-      }
-      if (finFilter.tipo !== 'todos') data = data.filter(f => f.tipo === finFilter.tipo);
-      return data;
     }
 
     function renderFinTable() {
-      const data = getFinFiltered();
-      const all = State.data.financeiro;
+      const wrap = document.getElementById('fin-list-wrap');
+      if (!wrap) return;
+      const tipo = document.getElementById('fin-tipo')?.value || 'todos';
+      const periodo = document.getElementById('fin-periodo')?.value || 'mes';
       const now = new Date();
       const thisMonth = localMonthStr(now);
-      const monthData = all.filter(f => f.data.startsWith(thisMonth));
-      const totalRec = monthData.filter(f => f.tipo === 'receita').reduce((s, f) => s + f.valor, 0);
-      const totalDesp = monthData.filter(f => f.tipo === 'despesa').reduce((s, f) => s + f.valor, 0);
-      const saldo = totalRec - totalDesp;
+      let list = State.data.financeiro
+        .filter(f => tipo === 'todos' || f.tipo === tipo)
+        .filter(f => periodo === 'todos' || f.data.startsWith(thisMonth))
+        .sort((a,b) => b.data.localeCompare(a.data));
 
-      document.getElementById('fin-summary').innerHTML = `
-    <div class="stat-box">
-      <div class="stat-val text-green">${fmtMoney(totalRec)}</div>
-      <div class="stat-lbl">Receitas (mês)</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-val text-red">${fmtMoney(totalDesp)}</div>
-      <div class="stat-lbl">Despesas (mês)</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-val ${saldo >= 0 ? 'text-green' : 'text-red'}">${fmtMoney(saldo)}</div>
-      <div class="stat-lbl">Saldo do mês</div>
-    </div>
-  `;
-
-      const el = document.getElementById('fin-table');
-      if (!data.length) {
-        el.innerHTML = `<div class="empty-state"><div class="empty-icon">💰</div><h3>Sem lançamentos</h3><p>Nenhum lançamento no período selecionado.</p></div>`;
+      if (!list.length) {
+        wrap.innerHTML = '<div class="empty-state"><div class="empty-icon">&#128197;</div><h3>Sem lan&#231;amentos</h3><p>Adicione receitas ou despesas.</p></div>';
         return;
       }
 
-      el.innerHTML = `<table>
-    <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Tipo</th><th>Valor</th><th>Ações</th></tr></thead>
-    <tbody>${data.map(f => `
-    <tr>
-      <td>${fmtDate(f.data)}</td>
-      <td><strong>${f.descricao}</strong></td>
-      <td><span class="badge badge-muted">${f.categoria}</span></td>
-      <td><span class="badge ${f.tipo === 'receita' ? 'badge-green' : 'badge-red'}">${f.tipo === 'receita' ? '↑ Receita' : '↓ Despesa'}</span></td>
-      <td class="${f.tipo === 'receita' ? 'text-green' : 'text-red'} fw-500">${fmtMoney(f.valor)}</td>
-      <td>
-        <div class="flex gap-8">
-          <button class="btn btn-ghost btn-icon btn-sm" onclick="editFin(${f.id})" title="Editar">✏️</button>
-          <button class="btn btn-danger btn-icon btn-sm" onclick="deleteFin(${f.id})" title="Excluir">🗑️</button>
-        </div>
-      </td>
-    </tr>`).join('')}
-    </tbody></table>`;
+      if (isMobile()) {
+        wrap.innerHTML = list.map(f => {
+          const isRec = f.tipo === 'receita';
+          return '<div class="fin-mobile-card ' + f.tipo + '">'
+            + '<div class="fin-mobile-icon">' + (isRec ? '&#128176;' : '&#128197;') + '</div>'
+            + '<div class="fin-mobile-info">'
+            + '<div class="fin-mobile-desc">' + (f.descricao||f.categoria||'—') + '</div>'
+            + '<div class="fin-mobile-date">' + fmtDate(f.data) + (f.categoria ? ' &middot; ' + f.categoria : '') + '</div>'
+            + '</div>'
+            + '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">'
+            + '<span class="fin-mobile-val">' + (isRec?'+':'-') + fmtMoney(f.valor) + '</span>'
+            + '<button class="btn btn-danger btn-icon btn-sm" style="min-height:30px;width:30px;height:30px;" onclick="deleteFin(' + f.id + ')">&#128465;&#65039;</button>'
+            + '</div>'
+            + '</div>';
+        }).join('');
+      } else {
+        wrap.innerHTML = '<div class="table-wrap"><table>'
+          + '<thead><tr><th>Data</th><th>Tipo</th><th>Descri&#231;&#227;o</th><th>Categoria</th><th>Valor</th><th></th></tr></thead>'
+          + '<tbody>' + list.map(f => '<tr>'
+            + '<td>' + fmtDate(f.data) + '</td>'
+            + '<td><span class="badge ' + (f.tipo==='receita'?'badge-green':'badge-red') + '">' + (f.tipo==='receita'?'Receita':'Despesa') + '</span></td>'
+            + '<td>' + (f.descricao||'—') + '</td>'
+            + '<td>' + (f.categoria||'—') + '</td>'
+            + '<td class="' + (f.tipo==='receita'?'text-green':'text-red') + '"><strong>' + fmtMoney(f.valor) + '</strong></td>'
+            + '<td><button class="btn btn-danger btn-sm btn-icon" onclick="deleteFin(' + f.id + ')">&#128465;&#65039;</button></td>'
+            + '</tr>').join('') + '</tbody></table></div>';
+      }
     }
+
 
     function openFinModal(editId = null) {
       const item = editId ? State.data.financeiro.find(f => f.id === editId) : null;
@@ -4625,72 +4701,93 @@
       const wrap = document.getElementById('agenda-grid-wrap');
       if (!wrap) return;
 
-      // Título da semana
       const d0 = days[0], d6 = days[6];
       document.getElementById('agenda-week-title').textContent =
-        `${d0.getDate()}/${d0.getMonth() + 1} – ${d6.getDate()}/${d6.getMonth() + 1}`;
+        d0.getDate() + '/' + (d0.getMonth()+1) + ' – ' + d6.getDate() + '/' + (d6.getMonth()+1);
 
       const today_str = today();
-      let html = '<div class="agenda-day-list">';
+      const dowNames = ['Dom','Seg','Ter','Qua','Qui','Sex','S\u00e1b'];
 
-      days.forEach(day => {
-        const dtStr = localDateStr(day);
-        const isToday = dtStr === today_str;
-        const events = State.data.agendamentos.filter(a => a.data === dtStr);
+      // Strip de dias rolavel
+      let stripEl = document.getElementById('agenda-day-strip');
+      if (!stripEl) {
+        stripEl = document.createElement('div');
+        stripEl.id = 'agenda-day-strip';
+        stripEl.style.cssText = 'display:flex;gap:6px;overflow-x:auto;padding:0 0 12px;' +
+          'scrollbar-width:none;margin-bottom:4px;-webkit-overflow-scrolling:touch;';
+        wrap.parentElement.insertBefore(stripEl, wrap);
+      }
+      stripEl.innerHTML = days.map(function(day) {
+        var dtStr = localDateStr(day);
+        var isActive = dtStr === today_str;
+        var hasEv = State.data.agendamentos.some(function(a){ return a.data === dtStr; });
+        var bg = isActive ? 'var(--gold)' : 'var(--bg-card)';
+        var bdr = isActive ? 'var(--gold)' : 'var(--border-soft)';
+        var lc = isActive ? 'rgba(255,255,255,.8)' : 'var(--text-muted)';
+        var nc = isActive ? '#fff' : 'var(--text)';
+        var dc = isActive ? 'rgba(255,255,255,.6)' : (hasEv ? 'var(--gold)' : 'transparent');
+        return '<div onclick="agendaJumpDay(\'' + dtStr + '\')" style="flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 11px;border-radius:14px;cursor:pointer;min-width:50px;background:' + bg + ';border:1px solid ' + bdr + ';">'
+          + '<span style="font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:' + lc + ';">' + dowNames[day.getDay()] + '</span>'
+          + '<span style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:600;line-height:1;color:' + nc + ';">' + day.getDate() + '</span>'
+          + '<span style="width:6px;height:6px;border-radius:50%;background:' + dc + ';margin-top:1px;"></span>'
+          + '</div>';
+      }).join('');
 
-        const dayName = day.toLocaleDateString('pt-BR', { weekday: 'long' });
-        const dayNum = day.getDate();
-        const dayMon = day.toLocaleDateString('pt-BR', { month: 'short' });
+      var html = '<div class="agenda-day-list">';
+      days.forEach(function(day) {
+        var dtStr = localDateStr(day);
+        var isToday = dtStr === today_str;
+        var events = State.data.agendamentos.filter(function(a){ return a.data === dtStr; });
+        var dayName = day.toLocaleDateString('pt-BR', { weekday: 'long' });
+        var dayNum = day.getDate();
+        var dayMon = day.toLocaleDateString('pt-BR', { month: 'short' });
+        var todayBadge = isToday ? ' <span style="color:var(--gold);font-size:10px;font-weight:700;background:var(--gold-glow);padding:1px 7px;border-radius:99px;vertical-align:middle;">HOJE</span>' : '';
+        var countTxt = events.length > 0 ? events.length + ' agendamento' + (events.length > 1 ? 's' : '') : 'Sem agendamentos';
 
-        html += `<div class="agenda-day-item">`;
-        html += `<div class="agenda-day-header" onclick="openAgModal('${dtStr}')">
-      <div class="agenda-day-num ${isToday ? 'today' : ''}">${dayNum}</div>
-      <div class="agenda-day-info">
-        <div class="agenda-day-name">${dayName} · ${dayMon}</div>
-        <div class="agenda-day-count">${events.length > 0 ? events.length + ' agendamento' + (events.length > 1 ? 's' : '') : 'Sem agendamentos'}</div>
-      </div>
-      <span style="color:var(--gold);font-size:18px;">+</span>
-    </div>`;
+        html += '<div class="agenda-day-item" id="agday-' + dtStr + '">';
+        html += '<div class="agenda-day-header" onclick="openAgModal(\'' + dtStr + '\')">'
+          + '<div class="agenda-day-num ' + (isToday ? 'today' : '') + '">' + dayNum + '</div>'
+          + '<div class="agenda-day-info">'
+          + '<div class="agenda-day-name">' + dayName + ' &middot; ' + dayMon + todayBadge + '</div>'
+          + '<div class="agenda-day-count">' + countTxt + '</div>'
+          + '</div>'
+          + '<button onclick="event.stopPropagation();openAgModal(\'' + dtStr + '\')" style="background:linear-gradient(135deg,var(--gold-dark),var(--gold));color:#fff;border:none;border-radius:50%;width:34px;height:34px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(184,145,106,.35);flex-shrink:0;">+</button>'
+          + '</div>';
 
         if (events.length > 0) {
           html += '<div class="agenda-day-events">';
-          events.sort((a, b) => a.hora.localeCompare(b.hora)).forEach(ev => {
-            const cls = ev.status === 'confirmado' ? 'ev-confirmado'
-              : ev.status === 'cancelado' ? 'ev-cancelado'
-                : ev.status === 'aguardando' ? 'ev-aguardando' : '';
-            const icon = ev.status === 'confirmado' ? '✓'
-              : ev.status === 'cancelado' ? '✕'
-                : ev.status === 'aguardando' ? '📱' : '⏳';
-            html += `<div class="agenda-list-event ${cls}">
-          <div class="ev-hora" onclick="openAgModal('${ev.data}','${ev.hora}',${ev.id})">${ev.hora}</div>
-          <div class="ev-info" onclick="openAgModal('${ev.data}','${ev.hora}',${ev.id})" style="flex:1;">
-            <div class="ev-nome">${ev.clienteNome}</div>
-            <div class="ev-svc">${icon} ${ev.servicoNome}</div>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
-            <button onclick="event.stopPropagation();openAgModal('${ev.data}','${ev.hora}',${ev.id})"
-              style="background:var(--gold-glow);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer;color:var(--gold);">
-              ✏️
-            </button>
-            <button onclick="event.stopPropagation();deleteAg(${ev.id})"
-              style="background:rgba(224,92,92,0.12);border:1px solid rgba(224,92,92,0.2);border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer;color:var(--red);">
-              🗑️
-            </button>
-          </div>
-        </div>`;
+          events.sort(function(a, b){ return a.hora.localeCompare(b.hora); }).forEach(function(ev) {
+            var cls = ev.status === 'confirmado' ? 'ev-confirmado' : ev.status === 'cancelado' ? 'ev-cancelado' : ev.status === 'aguardando' ? 'ev-aguardando' : '';
+            var icon = ev.status === 'confirmado' ? '&#10003;' : ev.status === 'cancelado' ? '&#10005;' : ev.status === 'aguardando' ? '&#128241;' : '&#9203;';
+            var valorStr = ev.valor ? ' &middot; <span style="color:var(--gold-light);font-weight:600;">R$' + Number(ev.valor).toFixed(2).replace('.',',') + '</span>' : '';
+            html += '<div class="agenda-list-event ' + cls + '">'
+              + '<div style="display:flex;flex-direction:column;align-items:center;min-width:52px;" onclick="openAgModal(\'' + ev.data + '\',\'' + ev.hora + '\',' + ev.id + ')">'
+              + '<span class="ev-hora">' + ev.hora + '</span>'
+              + '<span style="font-size:10px;color:var(--text-muted);margin-top:2px;">hrs</span>'
+              + '</div>'
+              + '<div class="ev-info" style="flex:1;" onclick="openAgModal(\'' + ev.data + '\',\'' + ev.hora + '\',' + ev.id + ')">'
+              + '<div class="ev-nome">' + ev.clienteNome + '</div>'
+              + '<div class="ev-svc">' + icon + ' ' + ev.servicoNome + valorStr + '</div>'
+              + '</div>'
+              + '<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">'
+              + '<button onclick="event.stopPropagation();openAgModal(\'' + ev.data + '\',\'' + ev.hora + '\',' + ev.id + ')" style="background:var(--gold-glow);border:1px solid var(--border);border-radius:10px;width:38px;height:38px;font-size:16px;cursor:pointer;color:var(--gold);display:flex;align-items:center;justify-content:center;">&#9999;&#65039;</button>'
+              + '<button onclick="event.stopPropagation();deleteAg(' + ev.id + ')" style="background:rgba(224,92,92,0.12);border:1px solid rgba(224,92,92,0.2);border-radius:10px;width:38px;height:38px;font-size:16px;cursor:pointer;color:var(--red);display:flex;align-items:center;justify-content:center;">&#128465;&#65039;</button>'
+              + '</div>'
+              + '</div>';
           });
           html += '</div>';
         } else {
-          html += `<div class="agenda-add-btn" onclick="openAgModal('${dtStr}')">
-        <span>＋</span> Tocar para agendar
-      </div>`;
+          html += '<div class="agenda-add-btn" onclick="openAgModal(\'' + dtStr + '\')"><span style="font-size:18px;">+</span> Toque para agendar</div>';
         }
-
         html += '</div>';
       });
-
       html += '</div>';
       wrap.innerHTML = html;
+    }
+
+    function agendaJumpDay(dtStr) {
+      var el = document.getElementById('agday-' + dtStr);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     function agendaNav(dir) { agendaWeekOffset += dir; renderAgendaGrid(); }
@@ -5082,79 +5179,70 @@
 
     function renderClientes(container) {
       container.innerHTML = `
-    <div class="page-section">
-      <div class="flex justify-between items-center mb-20">
-        <div class="search-input-wrap">
-          <span class="search-icon">🔍</span>
-          <input class="form-control" id="cli-search" placeholder="Buscar por nome, telefone ou email..."
-            value="${cliSearch}" oninput="cliSearch=this.value;renderCliTable()">
+      <div class="page-section">
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-title">Clientes</div><div class="card-subtitle">${State.data.clientes.length} cadastrados</div></div>
+            <div class="flex gap-8">
+              <input type="text" class="form-control" id="cli-search" placeholder="Buscar cliente..." style="max-width:200px;min-height:36px;padding:7px 12px;"
+                oninput="renderCliTable()" />
+              <button class="btn btn-primary btn-sm" onclick="openCliModal()">+ Novo</button>
+            </div>
+          </div>
+          <div id="cli-list-wrap"></div>
         </div>
-        <div class="flex gap-8 items-center">
-          <span class="text-muted text-sm" id="cli-count"></span>
-          <button class="btn btn-primary" onclick="openCliModal()">+ Novo Cliente</button>
-        </div>
-      </div>
-      <div class="card" style="padding:0;overflow:hidden;">
-        <div class="table-wrap" id="cli-table"></div>
-      </div>
-    </div>
-  `;
+      </div>`;
       renderCliTable();
     }
 
     function renderCliTable() {
-      let data = State.data.clientes;
-      const q = cliSearch.toLowerCase();
-      if (q) data = data.filter(c =>
-        c.nome.toLowerCase().includes(q) ||
-        c.telefone.includes(q) ||
-        c.email.toLowerCase().includes(q)
-      );
-      data = data.sort((a, b) => b.atendimentos - a.atendimentos);
+      const wrap = document.getElementById('cli-list-wrap');
+      if (!wrap) return;
+      const q = (document.getElementById('cli-search')?.value || '').toLowerCase();
+      const list = State.data.clientes.filter(c =>
+        !q || c.nome.toLowerCase().includes(q) || (c.telefone||'').includes(q) || (c.email||'').toLowerCase().includes(q)
+      ).sort((a,b)=>a.nome.localeCompare(b.nome));
 
-      const countEl = document.getElementById('cli-count');
-      if (countEl) countEl.textContent = `${data.length} cliente${data.length !== 1 ? 's' : ''}`;
-
-      const el = document.getElementById('cli-table');
-      if (!data.length) {
-        el.innerHTML = `<div class="empty-state"><div class="empty-icon">👥</div><h3>Nenhum cliente encontrado</h3><p>${cliSearch ? 'Tente outra busca.' : 'Adicione o primeiro cliente.'}</p></div>`;
+      if (!list.length) {
+        wrap.innerHTML = '<div class="empty-state"><div class="empty-icon">&#128101;</div><h3>Nenhum cliente encontrado</h3><p>Ajuste a busca ou cadastre um novo.</p></div>';
         return;
       }
 
-      el.innerHTML = `<table>
-    <thead><tr>
-      <th>Nome</th><th>Telefone</th><th>Email</th><th>Aniversário</th><th>Atendimentos</th><th>Ações</th>
-    </tr></thead>
-    <tbody>${data.map(c => `
-    <tr>
-      <td>
-        <div class="flex items-center gap-8">
-          <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--gold-dark),var(--gold));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--bg);flex-shrink:0;">
-            ${c.nome.charAt(0)}
-          </div>
-          <div>
-            <div style="font-weight:500;color:var(--text);">${c.nome}</div>
-            ${c.obs ? `<div class="text-xs text-muted">${c.obs.slice(0, 40)}${c.obs.length > 40 ? '...' : ''}</div>` : ''}
-          </div>
-        </div>
-      </td>
-      <td>${c.telefone}</td>
-      <td>${c.email || '—'}</td>
-      <td>${c.aniversario ? fmtDate(c.aniversario) : '—'}</td>
-      <td>
-        <span class="badge ${c.atendimentos >= 10 ? 'badge-gold' : c.atendimentos >= 5 ? 'badge-blue' : 'badge-muted'}">
-          ${c.atendimentos} atend.
-        </span>
-      </td>
-      <td>
-        <div class="flex gap-8">
-          <button class="btn btn-ghost btn-icon btn-sm" onclick="openCliModal(${c.id})" title="Editar">✏️</button>
-          <button class="btn btn-danger btn-icon btn-sm" onclick="deleteCli(${c.id})" title="Excluir">🗑️</button>
-        </div>
-      </td>
-    </tr>`).join('')}
-    </tbody></table>`;
+      if (isMobile()) {
+        wrap.innerHTML = list.map(c => {
+          const inicial = c.nome.charAt(0).toUpperCase();
+          const ag = State.data.agendamentos.filter(a => a.clienteId === c.id).length;
+          return '<div class="cli-mobile-card">'
+            + '<div class="cli-avatar">' + inicial + '</div>'
+            + '<div class="cli-mobile-info">'
+            + '<div class="cli-mobile-name">' + c.nome + '</div>'
+            + '<div class="cli-mobile-sub">' + (c.telefone||'Sem telefone') + (ag ? ' &middot; ' + ag + ' agend.' : '') + '</div>'
+            + '</div>'
+            + '<div class="cli-mobile-actions">'
+            + '<button class="btn btn-ghost btn-icon" onclick="openCliModal(' + c.id + ')" title="Editar">&#9999;&#65039;</button>'
+            + '<button class="btn btn-danger btn-icon" onclick="deleteCli(' + c.id + ')" title="Excluir">&#128465;&#65039;</button>'
+            + '</div>'
+            + '</div>';
+        }).join('');
+      } else {
+        wrap.innerHTML = '<div class="table-wrap"><table>'
+          + '<thead><tr><th>Nome</th><th>Telefone</th><th>Email</th><th>Agend.</th><th></th></tr></thead>'
+          + '<tbody>' + list.map(c => {
+            const ag = State.data.agendamentos.filter(a => a.clienteId === c.id).length;
+            return '<tr>'
+              + '<td><strong>' + c.nome + '</strong></td>'
+              + '<td>' + (c.telefone||'-') + '</td>'
+              + '<td>' + (c.email||'-') + '</td>'
+              + '<td>' + ag + '</td>'
+              + '<td><div class="flex gap-8">'
+              + '<button class="btn btn-ghost btn-sm btn-icon" onclick="openCliModal(' + c.id + ')">&#9999;&#65039;</button>'
+              + '<button class="btn btn-danger btn-sm btn-icon" onclick="deleteCli(' + c.id + ')">&#128465;&#65039;</button>'
+              + '</div></td>'
+              + '</tr>';
+          }).join('') + '</tbody></table></div>';
+      }
     }
+
 
     function openCliModal(editId = null) {
       const item = editId ? State.data.clientes.find(c => c.id === editId) : null;
