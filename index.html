@@ -5520,26 +5520,39 @@
     let relType = 'faturamento';
     let relPeriodo = 'mes';
 
+    /* ══════════════════════════════════════════════════
+       RELATÓRIOS — variáveis de estado
+    ══════════════════════════════════════════════════ */
+
     function renderRelatorios(container) {
       container.innerHTML = `
-    <div class="page-section">
-      <div class="flex gap-8 mb-20">
-        <div class="filter-chip ${relType === 'faturamento' ? 'active' : ''}" onclick="setRelType('faturamento',this)">📊 Faturamento</div>
-        <div class="filter-chip ${relType === 'servicos' ? 'active' : ''}" onclick="setRelType('servicos',this)">💈 Serviços</div>
-        <div class="filter-chip ${relType === 'clientes' ? 'active' : ''}" onclick="setRelType('clientes',this)">👥 Clientes</div>
-        <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
-          <select class="form-control" style="width:auto;font-size:12px;padding:6px 10px;" onchange="setRelPeriodo(this.value)">
-            <option value="mes">Este mês</option>
-            <option value="ultimos3">Últimos 3 meses</option>
-            <option value="ano">Este ano</option>
-            <option value="todos">Todo período</option>
-          </select>
-          <button class="btn btn-primary btn-sm" onclick="exportCSV()">⬇ Exportar CSV</button>
+      <div class="page-section">
+
+        <!-- Filtros -->
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:20px;">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <div class="filter-chip ${relType==='faturamento'?'active':''}" onclick="setRelType('faturamento',this)">📊 Faturamento</div>
+            <div class="filter-chip ${relType==='servicos'?'active':''}" onclick="setRelType('servicos',this)">💈 Serviços</div>
+            <div class="filter-chip ${relType==='clientes'?'active':''}" onclick="setRelType('clientes',this)">👥 Clientes</div>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <select class="form-control" style="width:auto;font-size:12px;padding:7px 12px;min-height:36px;" onchange="setRelPeriodo(this.value)">
+              <option value="mes">Este mês</option>
+              <option value="ultimos3">Últimos 3 meses</option>
+              <option value="ano">Este ano</option>
+              <option value="todos">Todo período</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="exportCSV()" style="gap:6px;">
+              ⬇ CSV
+            </button>
+            <button class="btn btn-primary btn-sm" onclick="exportPDF()" style="gap:6px;">
+              📄 Exportar PDF
+            </button>
+          </div>
         </div>
-      </div>
-      <div id="rel-content"></div>
-    </div>
-  `;
+
+        <div id="rel-content"></div>
+      </div>`;
       renderRelContent();
     }
 
@@ -5557,205 +5570,481 @@
       const thisMonth = localMonthStr(now);
       const thisYear = now.getFullYear().toString();
       const m3 = localMonthStr(new Date(now.getFullYear(), now.getMonth() - 2, 1));
-
       let fin = State.data.financeiro;
-      let ag = State.data.agendamentos;
-
-      if (relPeriodo === 'mes') {
-        fin = fin.filter(f => f.data.startsWith(thisMonth));
-        ag = ag.filter(a => a.data.startsWith(thisMonth));
-      } else if (relPeriodo === 'ultimos3') {
-        fin = fin.filter(f => f.data >= m3);
-        ag = ag.filter(a => a.data >= m3);
-      } else if (relPeriodo === 'ano') {
-        fin = fin.filter(f => f.data.startsWith(thisYear));
-        ag = ag.filter(a => a.data.startsWith(thisYear));
-      }
-
+      let ag  = State.data.agendamentos;
+      if (relPeriodo === 'mes')      { fin = fin.filter(f=>f.data.startsWith(thisMonth)); ag = ag.filter(a=>a.data.startsWith(thisMonth)); }
+      else if (relPeriodo === 'ultimos3') { fin = fin.filter(f=>f.data>=m3); ag = ag.filter(a=>a.data>=m3); }
+      else if (relPeriodo === 'ano') { fin = fin.filter(f=>f.data.startsWith(thisYear)); ag = ag.filter(a=>a.data.startsWith(thisYear)); }
       return { fin, ag };
+    }
+
+    function getPeriodoLabel() {
+      return { mes:'Este mês', ultimos3:'Últimos 3 meses', ano:'Este ano', todos:'Todo período' }[relPeriodo] || '';
     }
 
     function renderRelContent() {
       const { fin, ag } = getRelData();
       const el = document.getElementById('rel-content');
+      if (!el) return;
 
-      if (relType === 'faturamento') {
-        const totalRec = fin.filter(f => f.tipo === 'receita').reduce((s, f) => s + f.valor, 0);
-        const totalDesp = fin.filter(f => f.tipo === 'despesa').reduce((s, f) => s + f.valor, 0);
-        const saldo = totalRec - totalDesp;
-        const margem = totalRec > 0 ? Math.round((saldo / totalRec) * 100) : 0;
-
-        // Group by month
-        const byMonth = {};
-        fin.forEach(f => {
-          const m = f.data.slice(0, 7);
-          if (!byMonth[m]) byMonth[m] = { rec: 0, desp: 0 };
-          if (f.tipo === 'receita') byMonth[m].rec += f.valor;
-          else byMonth[m].desp += f.valor;
-        });
-
-        el.innerHTML = `
-      <div class="stats-row mb-20">
-        <div class="stat-box">
-          <div class="stat-val text-green">${fmtMoney(totalRec)}</div>
-          <div class="stat-lbl">Total Receitas</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-val text-red">${fmtMoney(totalDesp)}</div>
-          <div class="stat-lbl">Total Despesas</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-val ${saldo >= 0 ? 'text-green' : 'text-red'}">${fmtMoney(saldo)}</div>
-          <div class="stat-lbl">Saldo / Lucro</div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-header"><div class="card-title">Faturamento por Período</div></div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Mês</th><th>Receitas</th><th>Despesas</th><th>Saldo</th><th>Margem</th></tr></thead>
-            <tbody>${Object.entries(byMonth).sort((a, b) => b[0].localeCompare(a[0])).map(([m, v]) => {
-          const [y, mo] = m.split('-');
-          const s = v.rec - v.desp;
-          const mg = v.rec > 0 ? Math.round((s / v.rec) * 100) : 0;
-          return `<tr>
-                <td><strong>${getMonthName(parseInt(mo) - 1)} ${y}</strong></td>
-                <td class="text-green">${fmtMoney(v.rec)}</td>
-                <td class="text-red">${fmtMoney(v.desp)}</td>
-                <td class="${s >= 0 ? 'text-green' : 'text-red'}">${fmtMoney(s)}</td>
-                <td><span class="badge ${mg >= 50 ? 'badge-green' : mg >= 30 ? 'badge-gold' : 'badge-red'}">${mg}%</span></td>
-              </tr>`;
-        }).join('')}</tbody>
-          </table>
-        </div>
-      </div>`;
-
-      } else if (relType === 'servicos') {
-        const svcCount = {};
-        const svcRevenue = {};
-        ag.filter(a => a.status !== 'cancelado').forEach(a => {
-          if (!svcCount[a.servicoNome]) { svcCount[a.servicoNome] = 0; svcRevenue[a.servicoNome] = 0; }
-          svcCount[a.servicoNome]++;
-          svcRevenue[a.servicoNome] += a.valor;
-        });
-        const rows = Object.entries(svcCount).sort((a, b) => b[1] - a[1]);
-        const maxCount = rows[0]?.[1] || 1;
-
-        el.innerHTML = `
-      <div class="stats-row mb-20">
-        <div class="stat-box">
-          <div class="stat-val">${rows.length}</div>
-          <div class="stat-lbl">Serviços Realizados</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-val text-gold">${ag.filter(a => a.status !== 'cancelado').length}</div>
-          <div class="stat-lbl">Total Atendimentos</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-val text-green">${fmtMoney(ag.filter(a => a.status !== 'cancelado').reduce((s, a) => s + a.valor, 0))}</div>
-          <div class="stat-lbl">Receita dos Serviços</div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-header"><div class="card-title">Serviços Mais Procurados</div></div>
-        ${rows.length ? rows.map(([name, count], rank) => `
-          <div style="padding:14px 0;border-bottom:1px solid var(--border-soft);">
-            <div class="flex justify-between items-center mb-8">
-              <div class="flex items-center gap-8">
-                <span style="font-size:12px;font-weight:700;color:var(--gold);min-width:24px;">#${rank + 1}</span>
-                <span class="fw-500">${name}</span>
-              </div>
-              <div class="flex gap-12">
-                <span class="text-sm text-muted">${count} vezes</span>
-                <span class="text-sm text-gold">${fmtMoney(svcRevenue[name])}</span>
-              </div>
-            </div>
-            <div class="progress-bar">
-              <div class="progress-fill" style="width:${Math.round(count / maxCount * 100)}%"></div>
-            </div>
-          </div>`).join('') : '<div class="empty-state"><div class="empty-icon">💈</div><h3>Sem dados</h3></div>'}
-      </div>`;
-
-      } else if (relType === 'clientes') {
-        const cliCount = {};
-        const cliRevenue = {};
-        ag.filter(a => a.status !== 'cancelado').forEach(a => {
-          if (!cliCount[a.clienteNome]) { cliCount[a.clienteNome] = 0; cliRevenue[a.clienteNome] = 0; }
-          cliCount[a.clienteNome]++;
-          cliRevenue[a.clienteNome] += a.valor;
-        });
-        const rows = Object.entries(cliCount).sort((a, b) => b[1] - a[1]).slice(0, 10);
-
-        el.innerHTML = `
-      <div class="stats-row mb-20">
-        <div class="stat-box">
-          <div class="stat-val">${State.data.clientes.length}</div>
-          <div class="stat-lbl">Total Clientes</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-val text-gold">${rows.length > 0 ? rows[0][1] : 0}</div>
-          <div class="stat-lbl">Maior Frequência</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-val text-green">${rows.length > 0 ? fmtMoney(rows[0] ? cliRevenue[rows[0][0]] : 0) : 'R$ 0'}</div>
-          <div class="stat-lbl">Maior Receita (cliente)</div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-header"><div class="card-title">Clientes Mais Frequentes</div></div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>#</th><th>Cliente</th><th>Visitas</th><th>Receita Gerada</th><th>Ticket Médio</th></tr></thead>
-            <tbody>${rows.length ? rows.map(([name, count], i) => `
-            <tr>
-              <td><strong style="color:var(--gold)">${i + 1}</strong></td>
-              <td>
-                <div class="flex items-center gap-8">
-                  <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--gold-dark),var(--gold));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--bg);">${name.charAt(0)}</div>
-                  ${name}
-                </div>
-              </td>
-              <td><span class="badge badge-blue">${count}x</span></td>
-              <td class="text-green">${fmtMoney(cliRevenue[name])}</td>
-              <td class="text-gold">${fmtMoney(cliRevenue[name] / count)}</td>
-            </tr>`).join('') : '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">Sem dados no período</td></tr>'}
-            </tbody>
-          </table>
-        </div>
-      </div>`;
-      }
+      if (relType === 'faturamento') renderRelFaturamento(el, fin, ag);
+      else if (relType === 'servicos') renderRelServicos(el, ag);
+      else renderRelClientes(el, ag);
     }
 
+    /* ── FATURAMENTO ────────────────────────────────── */
+    function renderRelFaturamento(el, fin, ag) {
+      const totalRec  = fin.filter(f=>f.tipo==='receita').reduce((s,f)=>s+f.valor,0);
+      const totalDesp = fin.filter(f=>f.tipo==='despesa').reduce((s,f)=>s+f.valor,0);
+      const saldo     = totalRec - totalDesp;
+      const margem    = totalRec > 0 ? Math.round((saldo/totalRec)*100) : 0;
+      const agConf    = ag.filter(a=>a.status!=='cancelado');
+      const ticket    = agConf.length ? agConf.reduce((s,a)=>s+a.valor,0)/agConf.length : 0;
+
+      // Group by month
+      const byMonth = {};
+      fin.forEach(f => {
+        const m = f.data.slice(0,7);
+        if (!byMonth[m]) byMonth[m]={rec:0,desp:0};
+        if (f.tipo==='receita') byMonth[m].rec+=f.valor;
+        else byMonth[m].desp+=f.valor;
+      });
+
+      // Despesas by category
+      const byCat = {};
+      fin.filter(f=>f.tipo==='despesa').forEach(f=>{
+        const c = f.categoria||'Outros';
+        byCat[c]=(byCat[c]||0)+f.valor;
+      });
+      const catRows = Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+      const maxCat  = catRows[0]?.[1]||1;
+
+      // Receitas by category
+      const byRecCat = {};
+      fin.filter(f=>f.tipo==='receita').forEach(f=>{
+        const c = f.categoria||'Serviços';
+        byRecCat[c]=(byRecCat[c]||0)+f.valor;
+      });
+      const recCatRows = Object.entries(byRecCat).sort((a,b)=>b[1]-a[1]);
+
+      el.innerHTML = `
+      <!-- KPIs -->
+      <div class="kpi-grid" style="margin-bottom:20px;">
+        <div class="kpi-card" style="--kpi-color:var(--green)">
+          <div class="kpi-icon">💚</div>
+          <div class="kpi-value text-green">${fmtMoney(totalRec)}</div>
+          <div class="kpi-label">Total Receitas</div>
+          <div class="kpi-change up">&#8593; ${agConf.length} atendimentos</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--red)">
+          <div class="kpi-icon">📉</div>
+          <div class="kpi-value text-red">${fmtMoney(totalDesp)}</div>
+          <div class="kpi-label">Total Despesas</div>
+          <div class="kpi-change ${totalDesp===0?'up':'down'}">${catRows.length} categorias</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:${saldo>=0?'var(--green)':'var(--red)'}">
+          <div class="kpi-icon">⚖️</div>
+          <div class="kpi-value ${saldo>=0?'text-green':'text-red'}">${fmtMoney(saldo)}</div>
+          <div class="kpi-label">Saldo / Lucro</div>
+          <div class="kpi-change ${saldo>=0?'up':'down'}">Margem: ${margem}%</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--gold)">
+          <div class="kpi-icon">🎯</div>
+          <div class="kpi-value">${fmtMoney(ticket)}</div>
+          <div class="kpi-label">Ticket Médio</div>
+          <div class="kpi-change up">${agConf.length} serviços</div>
+        </div>
+      </div>
+
+      <!-- Faturamento por período + Despesas por categoria -->
+      <div class="grid-65-35" style="gap:16px;margin-bottom:16px;">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📅 Faturamento por Período</div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Mês</th><th>Receitas</th><th>Despesas</th><th>Saldo</th><th>Margem</th><th>Atend.</th></tr></thead>
+              <tbody>${Object.entries(byMonth).sort((a,b)=>b[0].localeCompare(a[0])).map(([m,v])=>{
+                const [y,mo]=m.split('-');
+                const s=v.rec-v.desp;
+                const mg=v.rec>0?Math.round((s/v.rec)*100):0;
+                const atsNo=ag.filter(a=>a.data.startsWith(m)&&a.status!=='cancelado').length;
+                return '<tr>'
+                  +'<td><strong>'+getMonthName(parseInt(mo)-1)+' '+y+'</strong></td>'
+                  +'<td class="text-green">'+fmtMoney(v.rec)+'</td>'
+                  +'<td class="text-red">'+fmtMoney(v.desp)+'</td>'
+                  +'<td class="'+(s>=0?'text-green':'text-red')+'"><strong>'+fmtMoney(s)+'</strong></td>'
+                  +'<td><span class="badge '+(mg>=50?'badge-green':mg>=30?'badge-gold':'badge-red')+'">'+mg+'%</span></td>'
+                  +'<td>'+atsNo+'</td>'
+                  +'</tr>';
+              }).join('')||'<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-muted);">Sem dados</td></tr>'}</tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-title">📂 Despesas por Categoria</div></div>
+          ${catRows.length ? catRows.map(([cat,val])=>`
+            <div style="margin-bottom:14px;">
+              <div class="flex justify-between mb-4">
+                <span class="text-sm fw-500">${cat}</span>
+                <span class="text-sm text-red fw-500">${fmtMoney(val)}</span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" style="width:${Math.round(val/maxCat*100)}%;background:var(--red);opacity:.7;"></div></div>
+            </div>`).join('')
+            : '<div class="empty-state" style="padding:24px 0;"><div class="empty-icon">📂</div><p>Sem despesas</p></div>'}
+        </div>
+      </div>
+
+      <!-- Receitas por categoria + Lançamentos detalhados -->
+      <div class="grid-2" style="gap:16px;">
+        <div class="card">
+          <div class="card-header"><div class="card-title">💚 Receitas por Categoria</div></div>
+          ${recCatRows.length ? recCatRows.map(([cat,val])=>`
+            <div style="margin-bottom:14px;">
+              <div class="flex justify-between mb-4">
+                <span class="text-sm fw-500">${cat}</span>
+                <span class="text-sm text-green fw-500">${fmtMoney(val)}</span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" style="width:${Math.round(val/totalRec*100)}%;background:var(--green);opacity:.75;"></div></div>
+            </div>`).join('')
+            : '<div class="empty-state" style="padding:24px 0;"><p>Sem receitas</p></div>'}
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-title">🗒️ Últimos Lançamentos</div></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Data</th><th>Descrição</th><th>Tipo</th><th>Valor</th></tr></thead>
+              <tbody>${fin.sort((a,b)=>b.data.localeCompare(a.data)).slice(0,10).map(f=>`
+                <tr>
+                  <td>${fmtDate(f.data)}</td>
+                  <td>${f.descricao||f.categoria||'—'}</td>
+                  <td><span class="badge ${f.tipo==='receita'?'badge-green':'badge-red'}">${f.tipo==='receita'?'Receita':'Despesa'}</span></td>
+                  <td class="${f.tipo==='receita'?'text-green':'text-red'}"><strong>${fmtMoney(f.valor)}</strong></td>
+                </tr>`).join('')||'<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted);">Sem lançamentos</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    /* ── SERVIÇOS ────────────────────────────────────── */
+    function renderRelServicos(el, ag) {
+      const agConf = ag.filter(a=>a.status!=='cancelado');
+      const agCanc = ag.filter(a=>a.status==='cancelado');
+      const totalRec = agConf.reduce((s,a)=>s+a.valor,0);
+      const ticket   = agConf.length ? totalRec/agConf.length : 0;
+      const taxaCanc = ag.length ? Math.round((agCanc.length/ag.length)*100) : 0;
+
+      // Por serviço
+      const svcMap = {};
+      agConf.forEach(a=>{
+        if(!svcMap[a.servicoNome]) svcMap[a.servicoNome]={count:0,rev:0};
+        svcMap[a.servicoNome].count++;
+        svcMap[a.servicoNome].rev+=a.valor;
+      });
+      const svcRows = Object.entries(svcMap).sort((a,b)=>b[1].count-a[1].count);
+      const maxCnt  = svcRows[0]?.[1].count||1;
+
+      // Por dia da semana
+      const byDow = {0:0,1:0,2:0,3:0,4:0,5:0,6:0};
+      const dowLabels = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+      agConf.forEach(a=>{
+        const d=new Date(a.data+'T12:00:00');
+        byDow[d.getDay()]=(byDow[d.getDay()]||0)+1;
+      });
+      const maxDow = Math.max(...Object.values(byDow))||1;
+
+      // Por horário (bloco de 2h)
+      const byHour = {};
+      agConf.forEach(a=>{
+        const h=parseInt((a.hora||'00:00').split(':')[0]);
+        const bloco = (Math.floor(h/2)*2)+'h-'+(Math.floor(h/2)*2+2)+'h';
+        byHour[bloco]=(byHour[bloco]||0)+1;
+      });
+      const hourRows = Object.entries(byHour).sort((a,b)=>a[0].localeCompare(b[0]));
+
+      el.innerHTML = `
+      <div class="kpi-grid" style="margin-bottom:20px;">
+        <div class="kpi-card" style="--kpi-color:var(--blue)">
+          <div class="kpi-icon">💈</div>
+          <div class="kpi-value">${svcRows.length}</div>
+          <div class="kpi-label">Tipos de Serviço</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--gold)">
+          <div class="kpi-icon">📅</div>
+          <div class="kpi-value text-gold">${agConf.length}</div>
+          <div class="kpi-label">Atendimentos</div>
+          <div class="kpi-change down">&#8595; ${agCanc.length} cancelados (${taxaCanc}%)</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--green)">
+          <div class="kpi-icon">💰</div>
+          <div class="kpi-value text-green">${fmtMoney(totalRec)}</div>
+          <div class="kpi-label">Receita Total</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--purple)">
+          <div class="kpi-icon">🎯</div>
+          <div class="kpi-value">${fmtMoney(ticket)}</div>
+          <div class="kpi-label">Ticket Médio</div>
+        </div>
+      </div>
+
+      <div class="grid-65-35" style="gap:16px;margin-bottom:16px;">
+        <div class="card">
+          <div class="card-header"><div class="card-title">💈 Serviços Mais Realizados</div></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>#</th><th>Serviço</th><th>Qtd.</th><th>Receita</th><th>Ticket Médio</th><th>Participação</th></tr></thead>
+              <tbody>${svcRows.length ? svcRows.map(([name,v],i)=>`
+                <tr>
+                  <td><strong style="color:var(--gold)">${i+1}</strong></td>
+                  <td><strong>${name}</strong></td>
+                  <td><span class="badge badge-blue">${v.count}x</span></td>
+                  <td class="text-green">${fmtMoney(v.rev)}</td>
+                  <td class="text-gold">${fmtMoney(v.rev/v.count)}</td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <div class="progress-bar" style="flex:1;margin:0;"><div class="progress-fill" style="width:${Math.round(v.count/maxCnt*100)}%"></div></div>
+                      <span style="font-size:11px;color:var(--text-muted);white-space:nowrap;">${Math.round(v.count/agConf.length*100)}%</span>
+                    </div>
+                  </td>
+                </tr>`).join('')
+                : '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-muted);">Sem dados</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-title">📆 Dias Mais Movimentados</div></div>
+          ${dowLabels.map((d,i)=>`
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+              <span style="min-width:28px;font-size:12px;font-weight:600;color:var(--text-muted);">${d}</span>
+              <div class="progress-bar" style="flex:1;margin:0;"><div class="progress-fill" style="width:${Math.round((byDow[i]||0)/maxDow*100)}%"></div></div>
+              <span style="min-width:20px;text-align:right;font-size:12px;font-weight:600;color:var(--gold);">${byDow[i]||0}</span>
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div class="card-title">🕐 Horários Mais Solicitados</div></div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;padding:4px 0;">
+          ${hourRows.length ? hourRows.map(([bloco,cnt])=>`
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:64px;">
+              <div style="width:100%;background:var(--bg-card2);border-radius:8px;overflow:hidden;height:60px;display:flex;align-items:flex-end;">
+                <div style="width:100%;background:var(--gold);opacity:.8;border-radius:6px 6px 0 0;height:${Math.round(cnt/Math.max(...hourRows.map(r=>r[1]))*100)}%;transition:height .3s;"></div>
+              </div>
+              <span style="font-size:10px;color:var(--text-muted);text-align:center;">${bloco}</span>
+              <span style="font-size:11px;font-weight:700;color:var(--gold);">${cnt}</span>
+            </div>`).join('')
+          : '<p style="color:var(--text-muted);font-size:13px;">Sem dados</p>'}
+        </div>
+      </div>`;
+    }
+
+    /* ── CLIENTES ────────────────────────────────────── */
+    function renderRelClientes(el, ag) {
+      const agConf = ag.filter(a=>a.status!=='cancelado');
+      const totalCli = State.data.clientes.length;
+      const cliMap = {};
+      agConf.forEach(a=>{
+        const cid = a.clienteId||a.clienteNome;
+        if(!cliMap[cid]) cliMap[cid]={nome:a.clienteNome,count:0,rev:0,ultimo:a.data};
+        cliMap[cid].count++;
+        cliMap[cid].rev+=a.valor;
+        if(a.data>cliMap[cid].ultimo) cliMap[cid].ultimo=a.data;
+      });
+      const cliRows = Object.values(cliMap).sort((a,b)=>b.count-a.count);
+      const topRev   = [...cliRows].sort((a,b)=>b.rev-a.rev);
+      const recentes = [...cliRows].sort((a,b)=>b.ultimo.localeCompare(a.ultimo)).slice(0,5);
+      const maxCount = cliRows[0]?.count||1;
+
+      // Frequência: 1x, 2-3x, 4+x
+      const freq1 = cliRows.filter(c=>c.count===1).length;
+      const freq2 = cliRows.filter(c=>c.count>=2&&c.count<=3).length;
+      const freq4 = cliRows.filter(c=>c.count>=4).length;
+
+      el.innerHTML = `
+      <div class="kpi-grid" style="margin-bottom:20px;">
+        <div class="kpi-card" style="--kpi-color:var(--purple)">
+          <div class="kpi-icon">👥</div>
+          <div class="kpi-value">${totalCli}</div>
+          <div class="kpi-label">Total Cadastrados</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--blue)">
+          <div class="kpi-icon">🔁</div>
+          <div class="kpi-value text-gold">${cliRows.length}</div>
+          <div class="kpi-label">Clientes Ativos</div>
+          <div class="kpi-change up">no período</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--green)">
+          <div class="kpi-icon">💰</div>
+          <div class="kpi-value text-green">${topRev[0]?fmtMoney(topRev[0].rev):'R$ 0'}</div>
+          <div class="kpi-label">Maior Receita</div>
+          <div class="kpi-change up">${topRev[0]?topRev[0].nome:'-'}</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--gold)">
+          <div class="kpi-icon">🏆</div>
+          <div class="kpi-value">${cliRows[0]?.count||0}x</div>
+          <div class="kpi-label">Maior Frequência</div>
+          <div class="kpi-change up">${cliRows[0]?.nome||'-'}</div>
+        </div>
+      </div>
+
+      <div class="grid-65-35" style="gap:16px;margin-bottom:16px;">
+        <div class="card">
+          <div class="card-header"><div class="card-title">🏆 Clientes Mais Frequentes</div></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>#</th><th>Cliente</th><th>Visitas</th><th>Receita</th><th>Ticket Médio</th><th>Último</th></tr></thead>
+              <tbody>${cliRows.slice(0,10).map((c,i)=>`
+                <tr>
+                  <td><strong style="color:var(--gold)">${i+1}</strong></td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--gold-dark),var(--gold));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--bg);flex-shrink:0;">${c.nome.charAt(0)}</div>
+                      <strong>${c.nome}</strong>
+                    </div>
+                  </td>
+                  <td><span class="badge badge-blue">${c.count}x</span></td>
+                  <td class="text-green">${fmtMoney(c.rev)}</td>
+                  <td class="text-gold">${fmtMoney(c.rev/c.count)}</td>
+                  <td style="color:var(--text-muted);font-size:12px;">${fmtDate(c.ultimo)}</td>
+                </tr>`).join('')||'<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-muted);">Sem dados</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-title">📊 Frequência de Retorno</div></div>
+          <div style="display:flex;flex-direction:column;gap:14px;padding:4px 0;">
+            ${[['1x — Primeira visita',freq1,'var(--blue)'],['2–3x — Recorrente',freq2,'var(--gold)'],['4x+ — Fiel',freq4,'var(--green)']].map(([label,count,color])=>`
+            <div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+                <span style="font-size:13px;font-weight:500;">${label}</span>
+                <span style="font-size:13px;font-weight:700;color:${color};">${count} cliente${count!==1?'s':''}</span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" style="width:${cliRows.length?Math.round(count/cliRows.length*100):0}%;background:${color};"></div></div>
+            </div>`).join('')}
+
+          <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border-soft);">
+            <div class="card-title" style="margin-bottom:12px;font-size:14px;">🕐 Últimas Visitas</div>
+            ${recentes.map(c=>`
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--gold-dark),var(--gold));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--bg);flex-shrink:0;">${c.nome.charAt(0)}</div>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.nome}</div>
+                  <div style="font-size:11px;color:var(--text-muted);">${fmtDate(c.ultimo)}</div>
+                </div>
+                <span class="badge badge-blue">${c.count}x</span>
+              </div>`).join('')}
+          </div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    /* ── EXPORT CSV ─────────────────────────────────── */
     function exportCSV() {
       const { fin, ag } = getRelData();
-      let csv = '', filename = '';
-
-      if (relType === 'faturamento') {
-        csv = 'Data,Tipo,Descrição,Categoria,Valor\n';
-        csv += fin.map(f => `${f.data},${f.tipo},"${f.descricao}",${f.categoria},${f.valor}`).join('\n');
-        filename = 'faturamento.csv';
-      } else if (relType === 'servicos') {
-        const svcCount = {};
-        ag.forEach(a => { if (!svcCount[a.servicoNome]) svcCount[a.servicoNome] = 0; svcCount[a.servicoNome]++; });
-        csv = 'Serviço,Quantidade\n';
-        csv += Object.entries(svcCount).sort((a, b) => b[1] - a[1]).map(([n, c]) => `"${n}",${c}`).join('\n');
-        filename = 'servicos.csv';
+      let csv='', filename='';
+      if (relType==='faturamento') {
+        csv='Data,Tipo,Descricao,Categoria,Valor\n'+fin.map(f=>`${f.data},${f.tipo},"${f.descricao||''}","${f.categoria||''}",${f.valor}`).join('\n');
+        filename='faturamento.csv';
+      } else if (relType==='servicos') {
+        const m={};
+        ag.filter(a=>a.status!=='cancelado').forEach(a=>{if(!m[a.servicoNome])m[a.servicoNome]={count:0,rev:0};m[a.servicoNome].count++;m[a.servicoNome].rev+=a.valor;});
+        csv='Servico,Quantidade,Receita,Ticket Medio\n'+Object.entries(m).sort((a,b)=>b[1].count-a[1].count).map(([n,v])=>`"${n}",${v.count},${v.rev.toFixed(2)},${(v.rev/v.count).toFixed(2)}`).join('\n');
+        filename='servicos.csv';
       } else {
-        const cliCount = {};
-        ag.forEach(a => { if (!cliCount[a.clienteNome]) cliCount[a.clienteNome] = 0; cliCount[a.clienteNome]++; });
-        csv = 'Cliente,Visitas\n';
-        csv += Object.entries(cliCount).sort((a, b) => b[1] - a[1]).map(([n, c]) => `"${n}",${c}`).join('\n');
-        filename = 'clientes.csv';
+        const m={};
+        ag.filter(a=>a.status!=='cancelado').forEach(a=>{if(!m[a.clienteNome])m[a.clienteNome]={count:0,rev:0};m[a.clienteNome].count++;m[a.clienteNome].rev+=a.valor;});
+        csv='Cliente,Visitas,Receita Total,Ticket Medio\n'+Object.entries(m).sort((a,b)=>b[1].count-a[1].count).map(([n,v])=>`"${n}",${v.count},${v.rev.toFixed(2)},${(v.rev/v.count).toFixed(2)}`).join('\n');
+        filename='clientes.csv';
       }
-
-      const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = filename; a.click();
+      const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=url;a.download=filename;a.click();
       URL.revokeObjectURL(url);
-      toast('CSV exportado com sucesso!', 'success');
+      toast('CSV exportado!','success');
     }
 
+    /* ── EXPORT PDF ─────────────────────────────────── */
+    function exportPDF() {
+      const relContent = document.getElementById('rel-content');
+      if (!relContent) return;
+
+      const tipoLabel = {faturamento:'Faturamento',servicos:'Serviços',clientes:'Clientes'}[relType];
+      const periodoLabel = getPeriodoLabel();
+      const dataGeracao = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+
+      const printWin = window.open('','_blank','width=900,height=700');
+      printWin.document.write(`<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Relatório de ${tipoLabel} — Studio Shelly Rodrigues</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Segoe UI',Arial,sans-serif; color:#1A1714; background:#fff; padding:32px; font-size:13px; }
+  .pdf-header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #B8916A; padding-bottom:16px; margin-bottom:24px; }
+  .pdf-logo { font-family:Georgia,serif; font-size:20px; font-weight:700; color:#B8916A; }
+  .pdf-meta { text-align:right; font-size:12px; color:#888; }
+  .pdf-title { font-family:Georgia,serif; font-size:22px; font-weight:600; color:#2C2016; margin-bottom:4px; }
+  .pdf-period { font-size:13px; color:#888; margin-bottom:24px; }
+  .kpi-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:24px; }
+  .kpi-box { background:#FAF8F5; border:1px solid #E2D5C5; border-radius:10px; padding:14px; border-left:4px solid #B8916A; }
+  .kpi-val { font-family:Georgia,serif; font-size:20px; font-weight:700; color:#2C2016; }
+  .kpi-lbl { font-size:11px; color:#888; margin-top:4px; text-transform:uppercase; letter-spacing:.05em; }
+  .section { margin-bottom:24px; }
+  .section-title { font-family:Georgia,serif; font-size:15px; font-weight:600; color:#2C2016; border-bottom:1px solid #E2D5C5; padding-bottom:8px; margin-bottom:14px; }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  thead th { background:#F5F1EB; padding:8px 10px; text-align:left; font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:#8A7060; border-bottom:1px solid #E2D5C5; }
+  tbody td { padding:9px 10px; border-bottom:1px solid #F0EBE3; color:#444; }
+  tbody tr:last-child td { border-bottom:none; }
+  .text-green { color:#4A8A6A; font-weight:600; }
+  .text-red { color:#B85C5C; font-weight:600; }
+  .text-gold { color:#B8916A; font-weight:600; }
+  .badge { display:inline-block; padding:2px 8px; border-radius:99px; font-size:11px; font-weight:700; }
+  .badge-green { background:#E8F5EE; color:#4A8A6A; }
+  .badge-red { background:#FBE8E8; color:#B85C5C; }
+  .badge-gold { background:#FBF3E8; color:#B8916A; }
+  .badge-blue { background:#E8EEF8; color:#5C7AB8; }
+  .progress-wrap { background:#F0EBE3; border-radius:4px; height:6px; overflow:hidden; }
+  .progress-fill { height:100%; background:#B8916A; border-radius:4px; }
+  .pdf-footer { margin-top:32px; padding-top:12px; border-top:1px solid #E2D5C5; font-size:11px; color:#AAA; display:flex; justify-content:space-between; }
+  @media print { body { padding:16px; } @page { margin:1.5cm; } }
+</style>
+</head>
+<body>
+<div class="pdf-header">
+  <div>
+    <div class="pdf-logo">✂ Studio Shelly Rodrigues</div>
+    <div style="font-size:11px;color:#888;margin-top:3px;">Sistema de Gestão</div>
+  </div>
+  <div class="pdf-meta">
+    <div>Relatório gerado em ${dataGeracao}</div>
+    <div style="margin-top:2px;">WebSalão v2</div>
+  </div>
+</div>
+<div class="pdf-title">Relatório de ${tipoLabel}</div>
+<div class="pdf-period">Período: ${periodoLabel}</div>
+${relContent.innerHTML}
+<div class="pdf-footer">
+  <span>Studio Shelly Rodrigues — Sistema de Gestão</span>
+  <span>Gerado automaticamente pelo WebSalão v2</span>
+</div>
+</body></html>`);
+      printWin.document.close();
+      printWin.focus();
+      setTimeout(()=>{ printWin.print(); }, 600);
+      toast('PDF pronto para impressão!','success');
+    }
 
     // ─── WhatsApp Integration ──────────────────────────────────────────────
 
