@@ -4146,6 +4146,16 @@
       const topSvcs = Object.entries(svcMap).sort((a,b)=>b[1]-a[1]).slice(0,4);
       const maxSvc  = topSvcs[0]?.[1]||1;
 
+      // Compute proximo card HTML before template literal (avoids nested backtick issue)
+      const proxCardHTML = proximo
+        ? proxAtendimentoCard(proximo, proximoPendente)
+        : '<div style="text-align:center;padding:28px 0;">'
+          + '<div style="font-size:36px;margin-bottom:10px;">&#10003;</div>'
+          + '<div style="font-size:15px;font-weight:600;color:var(--text);">Nenhum atendimento hoje</div>'
+          + '<div style="font-size:13px;color:var(--text-muted);margin-top:4px;">Adicione agendamentos na agenda</div>'
+          + '<button class="btn btn-primary btn-sm" onclick="openAgModal()" style="margin-top:14px;">+ Agendar agora</button>'
+          + '</div>';
+
       container.innerHTML = `
       <!-- ── KPIs ─────────────────────────────────────────────────────── -->
       <div class="kpi-grid page-section">
@@ -4189,13 +4199,7 @@
             </div>
             <button class="btn btn-primary btn-sm" onclick="navigate('agenda')" style="flex-shrink:0;">Ver Agenda</button>
           </div>
-          ${proximo ? proxAtendimentoCard(proximo, proximoPendente) : `
-          <div style="text-align:center;padding:28px 0;">
-            <div style="font-size:36px;margin-bottom:10px;">&#10003;</div>
-            <div style="font-size:15px;font-weight:600;color:var(--text);">Nenhum atendimento hoje</div>
-            <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">Adicione agendamentos na agenda</div>
-            <button class="btn btn-primary btn-sm" onclick="openAgModal()" style="margin-top:14px;">+ Agendar agora</button>
-          </div>`}
+          ${proxCardHTML}
         </div>
 
         <!-- Serviços populares -->
