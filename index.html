@@ -4041,216 +4041,213 @@
       const today_str = today();
       const now = new Date();
       const thisMonth = localMonthStr(now);
+      const weekday = now.toLocaleDateString('pt-BR', { weekday: 'long' });
+      const dataFull = now.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
 
-      // Calculate KPIs
-      const agHoje = State.data.agendamentos.filter(a => a.data === today_str);
-      const recMes = State.data.financeiro
-        .filter(f => f.tipo === 'receita' && f.data.startsWith(thisMonth))
-        .reduce((s, f) => s + f.valor, 0);
+      // KPIs
+      const agHoje      = State.data.agendamentos.filter(a => a.data === today_str);
+      const agConfirm   = agHoje.filter(a => a.status === 'confirmado');
+      const agPendente  = agHoje.filter(a => a.status === 'pendente' || a.status === 'aguardando');
+      const agCancelado = agHoje.filter(a => a.status === 'cancelado');
+      const recMes      = State.data.financeiro.filter(f => f.tipo === 'receita' && f.data.startsWith(thisMonth)).reduce((s,f)=>s+f.valor,0);
       const totalClientes = State.data.clientes.length;
-      const agConfirm = agHoje.filter(a => a.status !== 'cancelado');
-      const ticketMedio = agConfirm.length ? agConfirm.reduce((s, a) => s + a.valor, 0) / agConfirm.length : 0;
+      const faturadoHoje  = agConfirm.reduce((s,a)=>s+a.valor,0);
+      const ticketMedio   = agConfirm.length ? faturadoHoje/agConfirm.length : 0;
 
-      // 6-month chart data
-      const chartData = [];
-      for (let i = 5; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const ms = localMonthStr(d);
-        const rec = State.data.financeiro.filter(f => f.tipo === 'receita' && f.data.startsWith(ms)).reduce((s, f) => s + f.valor, 0);
-        const desp = State.data.financeiro.filter(f => f.tipo === 'despesa' && f.data.startsWith(ms)).reduce((s, f) => s + f.valor, 0);
-        chartData.push({ label: getMonthName(d.getMonth()), rec, desp });
-      }
+      // Próximo agendamento
+      const hojeOrdenado = agHoje.filter(a=>a.status!=='cancelado').sort((a,b)=>a.hora.localeCompare(b.hora));
+      const agoraMin = now.getHours()*60+now.getMinutes();
+      const proximo  = hojeOrdenado.find(a=>{ const [h,m]=a.hora.split(':'); return parseInt(h)*60+parseInt(m) >= agoraMin; });
 
-      // Popular services
-      const svcCount = {};
-      State.data.agendamentos.forEach(a => {
-        if (!svcCount[a.servicoNome]) svcCount[a.servicoNome] = 0;
-        svcCount[a.servicoNome]++;
+      // Serviços populares (todo período)
+      const svcMap = {};
+      State.data.agendamentos.filter(a=>a.status!=='cancelado').forEach(a=>{
+        svcMap[a.servicoNome]=(svcMap[a.servicoNome]||0)+1;
       });
-      const topSvcs = Object.entries(svcCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
-      const maxSvc = topSvcs[0]?.[1] || 1;
+      const topSvcs = Object.entries(svcMap).sort((a,b)=>b[1]-a[1]).slice(0,4);
+      const maxSvc  = topSvcs[0]?.[1]||1;
 
       container.innerHTML = `
-    <div class="kpi-grid page-section">
-      <div class="kpi-card" style="--kpi-color: var(--gold)">
-        <div class="kpi-icon">💰</div>
-        <div class="kpi-value">${fmtMoney(recMes)}</div>
-        <div class="kpi-label">Receita este mês</div>
-        <div class="kpi-change up">↑ 12% vs mês anterior</div>
+      <!-- ── KPIs ─────────────────────────────────────────────────────── -->
+      <div class="kpi-grid page-section">
+        <div class="kpi-card" style="--kpi-color:var(--gold)">
+          <div class="kpi-icon">💰</div>
+          <div class="kpi-value">${fmtMoney(recMes)}</div>
+          <div class="kpi-label">Receita este mês</div>
+          <div class="kpi-change up">&#8593; Faturado: ${fmtMoney(faturadoHoje)} hoje</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--blue);cursor:pointer;" onclick="navigate('agenda')">
+          <div class="kpi-icon">📅</div>
+          <div class="kpi-value">${agHoje.length}</div>
+          <div class="kpi-label">Agendamentos hoje</div>
+          <div class="kpi-change up">&#10003; ${agConfirm.length} confirmados · &#9203; ${agPendente.length} pendentes</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--purple)">
+          <div class="kpi-icon">&#128101;</div>
+          <div class="kpi-value">${totalClientes}</div>
+          <div class="kpi-label">Total de clientes</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--green)">
+          <div class="kpi-icon">&#127919;</div>
+          <div class="kpi-value">${fmtMoney(ticketMedio)}</div>
+          <div class="kpi-label">Ticket médio hoje</div>
+          <div class="kpi-change up">${agConfirm.length} serviços confirmados</div>
+        </div>
       </div>
-      <div class="kpi-card" style="--kpi-color: var(--blue)">
-        <div class="kpi-icon">📅</div>
-        <div class="kpi-value">${agHoje.length}</div>
-        <div class="kpi-label">Agendamentos hoje</div>
-        <div class="kpi-change up">↑ ${agConfirm.length} confirmados</div>
-      </div>
-      <div class="kpi-card" style="--kpi-color: var(--purple)">
-        <div class="kpi-icon">👥</div>
-        <div class="kpi-value">${totalClientes}</div>
-        <div class="kpi-label">Total de clientes</div>
-        <div class="kpi-change up">↑ 3 novos este mês</div>
-      </div>
-      <div class="kpi-card" style="--kpi-color: var(--green)">
-        <div class="kpi-icon">🎯</div>
-        <div class="kpi-value">${fmtMoney(ticketMedio)}</div>
-        <div class="kpi-label">Ticket médio</div>
-        <div class="kpi-change up">↑ 8% vs mês anterior</div>
-      </div>
-    </div>
 
-    <div class="grid-65-35 page-section">
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <div class="card-title">Receita vs Despesa</div>
-            <div class="card-subtitle">Últimos 6 meses</div>
+      <!-- ── PRÓXIMO + SERVIÇOS POPULARES ───────────────────────────── -->
+      <div class="grid-65-35 page-section" style="margin-bottom:16px;">
+
+        <!-- Próximo agendamento do dia -->
+        <div class="card" style="border-left:4px solid var(--gold);position:relative;overflow:hidden;">
+          <div style="position:absolute;top:0;right:0;width:160px;height:160px;background:var(--gold-glow);border-radius:50%;transform:translate(40px,-40px);pointer-events:none;"></div>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;">
+            <div>
+              <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;">&#128336; Próximo atendimento</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:15px;color:var(--text-muted);">${weekday}, ${dataFull}</div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="navigate('agenda')" style="flex-shrink:0;">Ver Agenda</button>
+          </div>
+          ${proximo ? `
+          <div style="background:var(--bg-card2);border-radius:14px;padding:18px 20px;display:flex;align-items:center;gap:16px;">
+            <div style="text-align:center;min-width:70px;">
+              <div style="font-family:'Cormorant Garamond',serif;font-size:38px;font-weight:600;color:var(--gold);line-height:1;">${proximo.hora}</div>
+              <div style="font-size:10px;color:var(--text-muted);font-weight:500;text-transform:uppercase;letter-spacing:.5px;margin-top:2px;">hrs</div>
+            </div>
+            <div style="width:1px;height:50px;background:var(--border);flex-shrink:0;"></div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;">${proximo.clienteNome}</div>
+              <div style="font-size:14px;color:var(--text-muted);">&#128136; ${proximo.servicoNome}</div>
+              <div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
+                ${statusBadge(proximo.status)}
+                <span style="font-size:13px;font-weight:600;color:var(--gold-light);">${fmtMoney(proximo.valor)}</span>
+              </div>
+            </div>
+            <div style="flex-shrink:0;">
+              <button class="btn btn-ghost btn-sm" onclick="openAgModal('${proximo.data}','${proximo.hora}',${proximo.id})">&#9999;&#65039; Editar</button>
+            </div>
+          </div>` : `
+          <div style="text-align:center;padding:28px 0;">
+            <div style="font-size:36px;margin-bottom:10px;">&#10003;</div>
+            <div style="font-size:15px;font-weight:600;color:var(--text);">Tudo em dia!</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">Nenhum atendimento pendente para hoje</div>
+          </div>`}
+        </div>
+
+        <!-- Serviços populares -->
+        <div class="card">
+          <div class="card-header" style="margin-bottom:16px;">
+            <div class="card-title">&#128200; Serviços Populares</div>
+            <button class="btn btn-ghost btn-sm" onclick="navigate('relatorios')" style="font-size:11px;">Ver mais</button>
+          </div>
+          ${topSvcs.length ? topSvcs.map(([name,count])=>`
+          <div style="margin-bottom:14px;">
+            <div class="flex justify-between mb-4">
+              <span class="text-sm fw-500">${name}</span>
+              <span class="text-sm text-gold fw-500">${count}x</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" style="width:${Math.round(count/maxSvc*100)}%"></div></div>
+          </div>`).join('')
+          : '<div class="empty-state" style="padding:16px 0;"><p>Sem dados</p></div>'}
+        </div>
+      </div>
+
+      <!-- ── AGENDAMENTOS DE HOJE — destaque principal ───────────────── -->
+      <div class="card page-section" id="dash-hoje-card">
+        <div class="card-header" style="padding-bottom:16px;border-bottom:1px solid var(--border-soft);margin-bottom:0;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,var(--gold-dark),var(--gold));display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:var(--shadow-gold);flex-shrink:0;">📅</div>
+            <div>
+              <div class="card-title" style="font-size:17px;">Agendamentos de Hoje</div>
+              <div class="card-subtitle">${weekday}, ${dataFull}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <span style="padding:4px 12px;border-radius:99px;font-size:12px;font-weight:600;background:rgba(76,175,130,0.12);color:var(--green);border:1px solid rgba(76,175,130,0.2);">&#10003; ${agConfirm.length} confirmados</span>
+            ${agPendente.length ? `<span style="padding:4px 12px;border-radius:99px;font-size:12px;font-weight:600;background:rgba(201,168,76,0.12);color:var(--gold-light);border:1px solid rgba(201,168,76,0.2);">&#9203; ${agPendente.length} pendentes</span>` : ''}
+            ${agCancelado.length ? `<span style="padding:4px 12px;border-radius:99px;font-size:12px;font-weight:600;background:rgba(224,92,92,0.1);color:var(--red);border:1px solid rgba(224,92,92,0.18);">&#10005; ${agCancelado.length} cancelados</span>` : ''}
+            <button class="btn btn-primary btn-sm" onclick="openAgModal()" style="margin-left:4px;">+ Novo</button>
           </div>
         </div>
-        <div class="chart-container">
-          <canvas id="chart-receita"></canvas>
-        </div>
-      </div>
 
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Serviços Populares</div>
-        </div>
-        <div id="top-services"></div>
-      </div>
-    </div>
-
-    <div class="card page-section mt-20">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Agendamentos de Hoje</div>
-          <div class="card-subtitle">${new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
-        </div>
-        <button class="btn btn-primary btn-sm" onclick="navigate('agenda')">Ver Agenda</button>
-      </div>
-      <div class="table-wrap">
         ${agHoje.length ? `
-        <table>
-          <thead>
-            <tr>
-              <th>Horário</th><th>Cliente</th><th>Serviço</th><th>Valor</th><th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${agHoje.sort((a, b) => a.hora.localeCompare(b.hora)).map(a => `
-            <tr>
-              <td><strong>${a.hora}</strong></td>
-              <td>${a.clienteNome}</td>
-              <td>${a.servicoNome}</td>
-              <td class="text-gold">${fmtMoney(a.valor)}</td>
-              <td>${statusBadge(a.status)}</td>
-            </tr>`).join('')}
-          </tbody>
-        </table>` : `<div class="empty-state"><div class="empty-icon">📅</div><h3>Nenhum agendamento hoje</h3><p>Adicione agendamentos na agenda.</p></div>`}
-      </div>
-    </div>
-  `;
-
-      // Render top services
-      const svcsEl = document.getElementById('top-services');
-      if (topSvcs.length) {
-        svcsEl.innerHTML = topSvcs.map(([name, count]) => `
-      <div style="margin-bottom:14px;">
-        <div class="flex justify-between mb-4">
-          <span class="text-sm">${name}</span>
-          <span class="text-sm text-gold fw-500">${count}x</span>
+        <!-- Linha de totais -->
+        <div style="display:flex;gap:0;border-bottom:1px solid var(--border-soft);">
+          <div style="flex:1;padding:12px 20px;text-align:center;border-right:1px solid var(--border-soft);">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--text);">${agHoje.length}</div>
+            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Total</div>
+          </div>
+          <div style="flex:1;padding:12px 20px;text-align:center;border-right:1px solid var(--border-soft);">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--green);">${agConfirm.length}</div>
+            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Confirmados</div>
+          </div>
+          <div style="flex:1;padding:12px 20px;text-align:center;border-right:1px solid var(--border-soft);">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--gold);">${fmtMoney(faturadoHoje)}</div>
+            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Faturado</div>
+          </div>
+          <div style="flex:1;padding:12px 20px;text-align:center;">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--gold);">${fmtMoney(ticketMedio)}</div>
+            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Ticket Médio</div>
+          </div>
         </div>
-        <div class="progress-bar">
-          <div class="progress-fill" style="width:${Math.round(count / maxSvc * 100)}%"></div>
-        </div>
-      </div>`).join('');
-      }
 
-      // Chart
-      drawRevenueChart(chartData);
+        <!-- Cards de agendamento -->
+        <div style="display:flex;flex-direction:column;">
+          ${agHoje.sort((a,b)=>a.hora.localeCompare(b.hora)).map((a,idx)=>{
+            const isProx = proximo && proximo.id === a.id;
+            const isCancelado = a.status==='cancelado';
+            const cor = a.status==='confirmado' ? 'var(--green)' : a.status==='cancelado' ? 'var(--red)' : 'var(--gold)';
+            return `<div style="display:flex;align-items:center;gap:0;padding:0;border-bottom:1px solid var(--border-soft);${isProx?'background:rgba(184,145,106,0.04);':''};transition:background .15s;"
+              onmouseover="this.style.background='rgba(184,145,106,0.03)'" onmouseout="this.style.background='${isProx?'rgba(184,145,106,0.04)':'transparent'}'">
+
+              <!-- Hora -->
+              <div style="min-width:90px;padding:18px 20px;text-align:center;border-right:1px solid var(--border-soft);">
+                <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:${cor};line-height:1;">${a.hora}</div>
+                ${isProx?'<div style="font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;margin-top:3px;">Próximo</div>':''}
+              </div>
+
+              <!-- Avatar + info -->
+              <div style="flex:1;display:flex;align-items:center;gap:14px;padding:16px 20px;min-width:0;">
+                <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--gold-dark),var(--gold-light));display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:700;color:#fff;flex-shrink:0;${isCancelado?'opacity:.45;':''}">
+                  ${a.clienteNome.charAt(0).toUpperCase()}
+                </div>
+                <div style="min-width:0;">
+                  <div style="font-size:15px;font-weight:600;color:var(--text);${isCancelado?'text-decoration:line-through;opacity:.5;':''}">${a.clienteNome}</div>
+                  <div style="font-size:13px;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">&#128136; ${a.servicoNome}</div>
+                </div>
+              </div>
+
+              <!-- Valor -->
+              <div style="min-width:110px;padding:16px 20px;text-align:right;border-left:1px solid var(--border-soft);">
+                <div style="font-size:15px;font-weight:700;color:var(--gold-light);">${fmtMoney(a.valor)}</div>
+              </div>
+
+              <!-- Status -->
+              <div style="min-width:160px;padding:16px 20px;text-align:center;border-left:1px solid var(--border-soft);">
+                ${statusBadge(a.status)}
+              </div>
+
+              <!-- Ações -->
+              <div style="padding:16px 16px;border-left:1px solid var(--border-soft);display:flex;gap:6px;">
+                <button class="btn btn-ghost btn-icon btn-sm" onclick="openAgModal('${a.data}','${a.hora}',${a.id})" title="Editar" style="font-size:15px;">&#9999;&#65039;</button>
+                <button class="btn btn-danger btn-icon btn-sm" onclick="deleteAg(${a.id})" title="Excluir" style="font-size:15px;">&#128465;&#65039;</button>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>` : `
+        <div class="empty-state" style="padding:48px 0;">
+          <div class="empty-icon" style="font-size:48px;margin-bottom:14px;">📅</div>
+          <h3 style="font-size:17px;margin-bottom:6px;">Nenhum agendamento hoje</h3>
+          <p style="font-size:14px;margin-bottom:20px;">Que tal adicionar o primeiro atendimento do dia?</p>
+          <button class="btn btn-primary" onclick="openAgModal()">+ Novo Agendamento</button>
+        </div>`}
+      </div>`;
     }
 
     function statusBadge(s) {
       const m = { confirmado: 'badge-green', pendente: 'badge-gold', cancelado: 'badge-red', aguardando: 'badge-wpp' };
       const l = { confirmado: '✓ Confirmado', pendente: '⏳ Pendente', cancelado: '✕ Cancelado', aguardando: '📱 Aguardando WhatsApp' };
       return `<span class="badge ${m[s] || 'badge-muted'}">${l[s] || s}</span>`;
-    }
-
-    function drawRevenueChart(data) {
-      const canvas = document.getElementById('chart-receita');
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      const W = canvas.parentElement.offsetWidth;
-      const H = 220;
-      canvas.width = W * window.devicePixelRatio;
-      canvas.height = H * window.devicePixelRatio;
-      canvas.style.width = W + 'px';
-      canvas.style.height = H + 'px';
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-
-      const pad = { top: 20, right: 20, bottom: 40, left: 60 };
-      const cW = W - pad.left - pad.right;
-      const cH = H - pad.top - pad.bottom;
-      const maxV = Math.max(...data.map(d => Math.max(d.rec, d.desp))) * 1.15;
-      const barW = (cW / data.length) * 0.35;
-
-      ctx.clearRect(0, 0, W, H);
-
-      // Grid lines
-      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-      ctx.lineWidth = 1;
-      for (let i = 0; i <= 4; i++) {
-        const y = pad.top + (cH / 4) * i;
-        ctx.beginPath();
-        ctx.moveTo(pad.left, y);
-        ctx.lineTo(pad.left + cW, y);
-        ctx.stroke();
-        ctx.fillStyle = 'rgba(240,237,230,0.35)';
-        ctx.font = '10px Jost';
-        ctx.textAlign = 'right';
-        ctx.fillText('R$' + Math.round(maxV * (1 - i / 4) / 1000) + 'k', pad.left - 8, y + 4);
-      }
-
-      data.forEach((d, i) => {
-        const x = pad.left + (cW / data.length) * i + (cW / data.length) * 0.15;
-        const recH = (d.rec / maxV) * cH;
-        const despH = (d.desp / maxV) * cH;
-
-        // Receita bar
-        const gRec = ctx.createLinearGradient(0, pad.top + cH - recH, 0, pad.top + cH);
-        gRec.addColorStop(0, 'rgba(201,168,76,0.9)');
-        gRec.addColorStop(1, 'rgba(154,122,46,0.4)');
-        ctx.fillStyle = gRec;
-        ctx.beginPath();
-        ctx.roundRect(x, pad.top + cH - recH, barW, recH, [4, 4, 0, 0]);
-        ctx.fill();
-
-        // Despesa bar
-        const gDesp = ctx.createLinearGradient(0, pad.top + cH - despH, 0, pad.top + cH);
-        gDesp.addColorStop(0, 'rgba(224,92,92,0.7)');
-        gDesp.addColorStop(1, 'rgba(224,92,92,0.2)');
-        ctx.fillStyle = gDesp;
-        ctx.beginPath();
-        ctx.roundRect(x + barW + 3, pad.top + cH - despH, barW, despH, [4, 4, 0, 0]);
-        ctx.fill();
-
-        // Label
-        ctx.fillStyle = 'rgba(240,237,230,0.5)';
-        ctx.font = '11px Jost';
-        ctx.textAlign = 'center';
-        ctx.fillText(d.label, x + barW, H - 12);
-      });
-
-      // Legend
-      ctx.fillStyle = 'rgba(201,168,76,0.9)';
-      ctx.fillRect(W - 120, 10, 12, 10);
-      ctx.fillStyle = 'rgba(240,237,230,0.6)';
-      ctx.font = '11px Jost';
-      ctx.textAlign = 'left';
-      ctx.fillText('Receita', W - 104, 19);
-      ctx.fillStyle = 'rgba(224,92,92,0.7)';
-      ctx.fillRect(W - 50, 10, 12, 10);
-      ctx.fillStyle = 'rgba(240,237,230,0.6)';
-      ctx.fillText('Despesa', W - 34, 19);
     }
 
 
