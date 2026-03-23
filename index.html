@@ -1211,17 +1211,8 @@
     }
 
     .agenda-bottom-section {
-      display: grid;
-      grid-template-columns: 280px 1fr;
-      gap: 20px;
-      align-items: start;
-      margin-top: 24px;
-    }
-
-    @media (max-width: 768px) {
-      .agenda-bottom-section {
-        grid-template-columns: 1fr;
-      }
+      display: block;
+      margin-top: 20px;
     }
 
     /* ─── RESPONSIVE ─── */
@@ -2166,6 +2157,10 @@
     ::-webkit-scrollbar { width: 0 !important; height: 0 !important; }
   }
 
+
+    @media (max-width: 768px) {
+      #agenda-status-bar { display: none !important; }
+    }
   @supports (padding-bottom: env(safe-area-inset-bottom)) {
     @media (max-width: 768px) {
       .bottom-nav { padding-bottom: env(safe-area-inset-bottom) !important; height: calc(68px + env(safe-area-inset-bottom)) !important; }
@@ -4545,31 +4540,40 @@
         <button class="btn btn-ghost btn-sm" title="Buscar atualizações" onclick="(async()=>{if(!window.FirebaseDB)return;try{const novos=await window.FirebaseDB.fbGetAll('agendamentos');processarAtualizacaoAgendamentos(novos);toast('Agenda atualizada ✓','success');}catch(e){toast('Erro ao atualizar','error');}})()">🔄</button>
         <button class="btn btn-primary btn-sm" style="margin-left:auto;" onclick="openAgModal()">+ Novo</button>
       </div>
+
+      <!-- Status pills (substituem a legenda) -->
+      <div id="agenda-status-bar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 0 14px;">
+        <span style="font-size:11px;color:var(--text-muted);font-weight:500;margin-right:4px;">Status:</span>
+        <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:99px;font-size:11px;font-weight:600;background:rgba(76,175,130,0.12);color:var(--green);border:1px solid rgba(76,175,130,0.2);">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--green);"></span>Confirmado
+        </span>
+        <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:99px;font-size:11px;font-weight:600;background:rgba(201,168,76,0.12);color:var(--gold-light);border:1px solid rgba(201,168,76,0.2);">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--gold);"></span>Pendente
+        </span>
+        <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:99px;font-size:11px;font-weight:600;background:rgba(37,211,102,0.1);color:#25D366;border:1px solid rgba(37,211,102,0.2);">
+          <span style="width:6px;height:6px;border-radius:50%;background:#25D366;"></span>WhatsApp
+        </span>
+        <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:99px;font-size:11px;font-weight:600;background:rgba(224,92,92,0.1);color:var(--red);border:1px solid rgba(224,92,92,0.2);">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--red);"></span>Cancelado
+        </span>
+      </div>
+
       <div id="agenda-grid-wrap"></div>
 
       <div class="agenda-bottom-section">
-        <div class="card">
-          <div class="card-header" style="margin-bottom:16px;">
-            <div class="card-title">Legenda</div>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:10px;">
-            <span class="badge badge-green" style="width:fit-content;padding:5px 12px;font-size:12px;">✓ Confirmado</span>
-            <span class="badge badge-gold" style="width:fit-content;padding:5px 12px;font-size:12px;">⏳ Pendente</span>
-            <span class="badge badge-wpp" style="width:fit-content;padding:5px 12px;font-size:12px;">📱 WhatsApp</span>
-            <span class="badge badge-red" style="width:fit-content;padding:5px 12px;font-size:12px;">✕ Cancelado</span>
-          </div>
-        </div>
-
         <div class="card" id="wpp-inbox-card" style="margin-top:0;">
-          <div class="card-header">
-            <div>
-              <div class="card-title" style="display:flex;align-items:center;gap:8px;">
-                <span>📱 Confirmações</span>
-                <span id="inbox-badge" style="display:none;" class="nav-badge">0</span>
+          <div class="card-header" style="border-bottom:1px solid var(--border-soft);padding-bottom:14px;margin-bottom:0;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#1a6e31,#25D366);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">📱</div>
+              <div>
+                <div class="card-title" style="display:flex;align-items:center;gap:8px;">
+                  Confirmações WhatsApp
+                  <span id="inbox-badge" style="display:none;" class="nav-badge">0</span>
+                </div>
+                <div class="card-subtitle">Respostas e confirmações de agendamentos</div>
               </div>
-              <div class="card-subtitle">Respostas via WhatsApp</div>
             </div>
-            <button class="btn btn-ghost btn-sm" title="Atualizar" onclick="(async()=>{
+            <button class="btn btn-ghost btn-sm" title="Atualizar" style="gap:6px;" onclick="(async()=>{
               if(!window.FirebaseDB)return;
               try{
                 const [agFb,wppFb]=await Promise.all([
@@ -4587,7 +4591,7 @@
                 if(State.currentPage==='agenda')renderAgendaGrid();
                 toast('Atualizado ✓','success');
               }catch(e){toast('Erro','error');}
-            })()">↻</button>
+            })()">↻ Atualizar</button>
           </div>
           <div id="wpp-inbox-inner"></div>
         </div>
@@ -4618,9 +4622,14 @@
       let html = '';
 
       if (pendentes.length) {
-        html += `<div style="padding:8px 16px;font-size:11px;font-weight:700;color:#25D366;letter-spacing:0.06em;text-transform:uppercase;background:rgba(37,211,102,0.06);border-bottom:1px solid rgba(37,211,102,0.1);">
-      ${pendentes.length} aguardando resposta
-    </div>`;
+        html += `<div style="padding:10px 16px;font-size:12px;font-weight:700;color:#25D366;
+          letter-spacing:0.04em;text-transform:uppercase;
+          background:rgba(37,211,102,0.07);
+          border-bottom:1px solid rgba(37,211,102,0.12);
+          display:flex;align-items:center;gap:8px;">
+          <span style="display:inline-flex;width:8px;height:8px;background:#25D366;border-radius:50%;animation:pulseBadge 2s ease infinite;"></span>
+          ${pendentes.length} aguardando resposta
+        </div>`;
       }
 
       const _limite = window._wppInboxLimite || 8;
@@ -4654,14 +4663,14 @@
         const timeStr = enviadoAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         const dateStr = enviadoAt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 
-        html += `<div class="wpp-inbox-item" style="${!m.lida ? 'background:rgba(37,211,102,0.03);' : ''}">
-      <div class="wpp-avatar">${m.clienteNome.charAt(0)}</div>
-      <div class="wpp-inbox-info">
-        <div class="wpp-inbox-name">${m.clienteNome.split(' ').slice(0, 2).join(' ')} ${!m.lida ? '<span style="display:inline-block;width:7px;height:7px;background:#25D366;border-radius:50%;margin-left:4px;vertical-align:middle;"></span>' : ''}</div>
-        <div class="wpp-inbox-msg">📅 ${fmtDate(m.data)} ${m.hora} · ${m.servico}</div>
+        html += `<div class="wpp-inbox-item" style="padding:14px 16px;${!m.lida ? 'background:rgba(37,211,102,0.04);border-left:3px solid #25D366;' : 'border-left:3px solid transparent;'}transition:background .15s;">
+      <div class="wpp-avatar" style="width:44px;height:44px;font-size:16px;font-weight:700;">${m.clienteNome.charAt(0)}</div>
+      <div class="wpp-inbox-info" style="flex:1;min-width:0;">
+        <div class="wpp-inbox-name" style="font-size:14px;font-weight:600;">${m.clienteNome.split(' ').slice(0, 2).join(' ')} ${!m.lida ? '<span style="display:inline-block;width:7px;height:7px;background:#25D366;border-radius:50%;margin-left:4px;vertical-align:middle;"></span>' : ''}</div>
+        <div class="wpp-inbox-msg" style="font-size:12px;margin-top:3px;">&#128197; ${fmtDate(m.data)} &middot; ${m.hora} &mdash; ${m.servico}</div>
         ${simBtns}
       </div>
-      <div class="wpp-inbox-right">
+      <div class="wpp-inbox-right" style="align-items:flex-end;gap:6px;">
         <span class="wpp-inbox-time">${dateStr} ${timeStr}</span>
         ${tagHtml}
       </div>
