@@ -4037,77 +4037,6 @@
 
 
     // ═══ DASHBOARD.JS ═══
-    function proxAtendimentoCard(ag, isPendente) {
-      // Buscar mensagem WPP associada
-      const msgs = State.data.wppMensagens || [];
-      const wppMsg = msgs.find(m => m.agId === ag.id);
-
-      // Determinar resposta: da msg WPP ou do status do agendamento
-      let resposta = wppMsg ? wppMsg.resposta : null;
-      if (!resposta) {
-        if (ag.status === 'confirmado') resposta = 'sim';
-        if (ag.status === 'cancelado')  resposta = 'nao';
-      }
-      const isPend = ag.status === 'pendente' || ag.status === 'aguardando' || (!resposta && wppMsg);
-
-      const corHora = ag.status === 'confirmado' ? 'var(--green)' : ag.status === 'cancelado' ? 'var(--red)' : '#25D366';
-      const unreadDot = (isPend && wppMsg) ? '<span style="display:inline-block;width:8px;height:8px;background:#25D366;border-radius:50%;margin-left:6px;vertical-align:middle;animation:pulseBadge 2s ease infinite;"></span>' : '';
-
-      // Avatar
-      const avatar = '<div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#1a6e31,#25D366);display:flex;align-items:center;justify-content:center;font-family:Cormorant Garamond,serif;font-size:20px;font-weight:700;color:#fff;flex-shrink:0;">'
-        + ag.clienteNome.charAt(0).toUpperCase() + '</div>';
-
-      // Botões de resposta ou badge de resultado
-      let acoes = '';
-      if (isPend) {
-        const msgId = wppMsg ? wppMsg.id : null;
-        const cbSim = msgId
-          ? `processarResposta(${msgId},'sim');setTimeout(()=>renderDashboard(document.getElementById('page-content')),150);`
-          : `confirmarAgDireto(${ag.id},'confirmado');`;
-        const cbNao = msgId
-          ? `processarResposta(${msgId},'nao');setTimeout(()=>renderDashboard(document.getElementById('page-content')),150);`
-          : `confirmarAgDireto(${ag.id},'cancelado');`;
-        acoes = '<div style="display:flex;gap:8px;margin-top:10px;">'
-          + '<button onclick="'+cbSim+'" style="display:flex;align-items:center;gap:5px;padding:7px 18px;border-radius:99px;border:1.5px solid rgba(76,175,130,0.4);background:rgba(76,175,130,0.1);color:var(--green);font-size:13px;font-weight:700;cursor:pointer;transition:background .15s;" onmouseover="this.style.background='rgba(76,175,130,0.2)'" onmouseout="this.style.background='rgba(76,175,130,0.1)'">&#10003; SIM</button>'
-          + '<button onclick="'+cbNao+'" style="display:flex;align-items:center;gap:5px;padding:7px 18px;border-radius:99px;border:1.5px solid rgba(224,92,92,0.35);background:rgba(224,92,92,0.08);color:var(--red);font-size:13px;font-weight:700;cursor:pointer;transition:background .15s;" onmouseover="this.style.background='rgba(224,92,92,0.18)'" onmouseout="this.style.background='rgba(224,92,92,0.08)'">&#10005; N&Atilde;O</button>'
-          + '</div>';
-      } else if (resposta === 'sim') {
-        acoes = '<div style="margin-top:10px;"><span style="display:inline-flex;align-items:center;gap:6px;padding:6px 16px;border-radius:99px;background:rgba(76,175,130,0.12);color:var(--green);border:1px solid rgba(76,175,130,0.25);font-size:13px;font-weight:700;">&#10003; CONFIRMADO</span></div>';
-      } else if (resposta === 'nao') {
-        acoes = '<div style="margin-top:10px;"><span style="display:inline-flex;align-items:center;gap:6px;padding:6px 16px;border-radius:99px;background:rgba(224,92,92,0.1);color:var(--red);border:1px solid rgba(224,92,92,0.22);font-size:13px;font-weight:700;">&#10005; CANCELADO</span></div>';
-      } else {
-        acoes = '<div style="margin-top:10px;">' + statusBadge(ag.status) + '</div>';
-      }
-
-      return '<div style="background:var(--bg-card2);border-radius:16px;padding:18px 20px;display:flex;align-items:center;gap:16px;border-left:4px solid ' + (isPend ? '#25D366' : ag.status==='confirmado' ? 'var(--green)' : ag.status==='cancelado' ? 'var(--red)' : 'var(--gold)') + ';">'
-        + avatar
-        + '<div style="width:1px;height:56px;background:var(--border);flex-shrink:0;"></div>'
-        + '<div style="flex:1;min-width:0;">'
-        +   '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
-        +     '<span style="font-size:16px;font-weight:700;color:var(--text);">' + ag.clienteNome + '</span>'
-        +     unreadDot
-        +   '</div>'
-        +   '<div style="font-size:13px;color:var(--text-muted);">&#128197; ' + fmtDate(ag.data) + ' &middot; ' + ag.hora + ' &mdash; ' + ag.servicoNome + '</div>'
-        +   '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">&#128222; ' + (ag.telefone || (State.data.clientes.find(c=>c.id===ag.clienteId)||{}).telefone || 'Sem telefone') + '</div>'
-        +   acoes
-        + '</div>'
-        + '<div style="flex-shrink:0;text-align:right;">'
-        +   '<div style="font-family:Cormorant Garamond,serif;font-size:28px;font-weight:600;color:'+corHora+';line-height:1;">' + ag.hora + '</div>'
-        +   '<div style="font-size:11px;font-weight:600;color:var(--gold-light);margin-top:4px;">' + fmtMoney(ag.valor) + '</div>'
-        + '</div>'
-        + '</div>';
-    }
-
-    function confirmarAgDireto(agId, novoStatus) {
-      const ai = State.data.agendamentos.findIndex(a => a.id === agId);
-      if (ai < 0) return;
-      State.data.agendamentos[ai].status = novoStatus;
-      saveAll();
-      const label = novoStatus === 'confirmado' ? 'Confirmado!' : 'Cancelado.';
-      toast((novoStatus==='confirmado'?'✅ ':'❌ ') + label, novoStatus==='confirmado'?'success':'error');
-      renderDashboard(document.getElementById('page-content'));
-    }
-
     function renderDashboard(container) {
       const today_str = today();
       const now = new Date();
@@ -4128,10 +4057,6 @@
       // Próximo agendamento
       const hojeOrdenado = agHoje.filter(a=>a.status!=='cancelado').sort((a,b)=>a.hora.localeCompare(b.hora));
       const agoraMin = now.getHours()*60+now.getMinutes();
-      // Prioridade 1: pendente/aguardando que ainda não passou
-      // Prioridade 2: qualquer confirmado que ainda não passou
-      // Prioridade 3: pendente/aguardando mesmo que já passou (ainda precisa de ação)
-      // Prioridade 4: último confirmado do dia (já passou, mas mostra o último)
       const toMin = a => { const [h,m]=(a.hora||'00:00').split(':'); return parseInt(h)*60+parseInt(m); };
       const pendentesHoje = hojeOrdenado.filter(a=>a.status==='pendente'||a.status==='aguardando');
       const proximoPendente = pendentesHoje.find(a=>toMin(a)>=agoraMin) || pendentesHoje[0];
@@ -4145,16 +4070,6 @@
       });
       const topSvcs = Object.entries(svcMap).sort((a,b)=>b[1]-a[1]).slice(0,4);
       const maxSvc  = topSvcs[0]?.[1]||1;
-
-      // Compute proximo card HTML before template literal (avoids nested backtick issue)
-      const proxCardHTML = proximo
-        ? proxAtendimentoCard(proximo, proximoPendente)
-        : '<div style="text-align:center;padding:28px 0;">'
-          + '<div style="font-size:36px;margin-bottom:10px;">&#10003;</div>'
-          + '<div style="font-size:15px;font-weight:600;color:var(--text);">Nenhum atendimento hoje</div>'
-          + '<div style="font-size:13px;color:var(--text-muted);margin-top:4px;">Adicione agendamentos na agenda</div>'
-          + '<button class="btn btn-primary btn-sm" onclick="openAgModal()" style="margin-top:14px;">+ Agendar agora</button>'
-          + '</div>';
 
       container.innerHTML = `
       <!-- ── KPIs ─────────────────────────────────────────────────────── -->
@@ -4192,14 +4107,36 @@
           <div style="position:absolute;top:0;right:0;width:160px;height:160px;background:var(--gold-glow);border-radius:50%;transform:translate(40px,-40px);pointer-events:none;"></div>
           <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;">
             <div>
-              <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;">
-                ${proximoPendente ? '&#9203; Aguardando confirmação' : proximoFuturo ? '&#128336; Próximo atendimento' : hojeOrdenado.length ? '&#10003; Último atendimento do dia' : '&#128336; Próximo atendimento'}
-              </div>
+              <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;">&#128336; Próximo atendimento</div>
               <div style="font-family:'Cormorant Garamond',serif;font-size:15px;color:var(--text-muted);">${weekday}, ${dataFull}</div>
             </div>
             <button class="btn btn-primary btn-sm" onclick="navigate('agenda')" style="flex-shrink:0;">Ver Agenda</button>
           </div>
-          ${proxCardHTML}
+          ${proximo ? `
+          <div style="background:var(--bg-card2);border-radius:14px;padding:18px 20px;display:flex;align-items:center;gap:16px;">
+            <div style="text-align:center;min-width:70px;">
+              <div style="font-family:'Cormorant Garamond',serif;font-size:38px;font-weight:600;color:var(--gold);line-height:1;">${proximo.hora}</div>
+              <div style="font-size:10px;color:var(--text-muted);font-weight:500;text-transform:uppercase;letter-spacing:.5px;margin-top:2px;">hrs</div>
+            </div>
+            <div style="width:1px;height:50px;background:var(--border);flex-shrink:0;"></div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;">${proximo.clienteNome}</div>
+              <div style="font-size:14px;color:var(--text-muted);">&#128136; ${proximo.servicoNome}</div>
+              <div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
+                ${statusBadge(proximo.status)}
+                <span style="font-size:13px;font-weight:600;color:var(--gold-light);">${fmtMoney(proximo.valor)}</span>
+              </div>
+            </div>
+            <div style="flex-shrink:0;">
+              <button class="btn btn-ghost btn-sm" onclick="openAgModal('${proximo.data}','${proximo.hora}',${proximo.id})">&#9999;&#65039; Editar</button>
+            </div>
+          </div>` : `
+          <div style="text-align:center;padding:28px 0;">
+            <div style="font-size:36px;margin-bottom:10px;">&#10003;</div>
+            <div style="font-size:15px;font-weight:600;color:var(--text);">Nenhum atendimento hoje</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">Adicione agendamentos na agenda</div>
+            <button class="btn btn-primary btn-sm" onclick="openAgModal()" style="margin-top:14px;">+ Agendar agora</button>
+          </div>`}
         </div>
 
         <!-- Serviços populares -->
@@ -4264,14 +4201,14 @@
           ${agHoje.sort((a,b)=>a.hora.localeCompare(b.hora)).map((a,idx)=>{
             const isProx = proximo && proximo.id === a.id;
             const isCancelado = a.status==='cancelado';
-            const cor = a.status==='confirmado' ? 'var(--green)' : a.status==='cancelado' ? 'var(--red)' : a.status==='aguardando' ? '#25D366' : 'var(--gold)';
+            const cor = a.status==='confirmado' ? 'var(--green)' : a.status==='cancelado' ? 'var(--red)' : 'var(--gold)';
             return `<div style="display:flex;align-items:center;gap:0;padding:0;border-bottom:1px solid var(--border-soft);${isProx?'background:rgba(184,145,106,0.04);':''};transition:background .15s;"
               onmouseover="this.style.background='rgba(184,145,106,0.03)'" onmouseout="this.style.background='${isProx?'rgba(184,145,106,0.04)':'transparent'}'">
 
               <!-- Hora -->
               <div style="min-width:90px;padding:18px 20px;text-align:center;border-right:1px solid var(--border-soft);">
                 <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:${cor};line-height:1;">${a.hora}</div>
-                ${isProx && (proximoFuturo || proximoPendente)?'<div style="font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;margin-top:3px;">'+(a.status==='pendente'||a.status==='aguardando'?'Pendente':'Próximo')+'</div>':''}
+                ${isProx?'<div style="font-size:9px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;margin-top:3px;">Próximo</div>':''}
               </div>
 
               <!-- Avatar + info -->
