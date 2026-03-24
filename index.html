@@ -3540,7 +3540,22 @@
             Storage.save('clientes', clientes);
           }
         }
-        if (servicos.length) { State.data.servicos = servicos; Storage.save('servicos', servicos); }
+        if (servicos.length) {
+          const localSvcTs = parseInt(localStorage.getItem('shelly_servicos_ts') || '0');
+          const fbSvcTs    = parseInt(localStorage.getItem('shelly_servicos_fb_ts') || '0');
+          if (localSvcTs > fbSvcTs) {
+            if (window.FirebaseDB) {
+              const localIds = new Set(State.data.servicos.map(s=>String(s.id)));
+              const toDelete = servicos.filter(s=>!localIds.has(String(s.id)));
+              await Promise.all(toDelete.map(s=>window.FirebaseDB.fbDelete('servicos',s.id).catch(()=>{})));
+              if (State.data.servicos.length) await window.FirebaseDB.fbBatchSet('servicos', State.data.servicos).catch(()=>{});
+            }
+            localStorage.setItem('shelly_servicos_fb_ts', Date.now().toString());
+          } else {
+            State.data.servicos = servicos;
+            Storage.save('servicos', servicos);
+          }
+        }
         if (financeiro.length) {
           const localFinTs = parseInt(localStorage.getItem('shelly_financeiro_ts') || '0');
           const fbFinTs    = parseInt(localStorage.getItem('shelly_financeiro_fb_ts') || '0');
@@ -4616,11 +4631,15 @@
       renderSvcGrid();
     }
 
-    function deleteSvc(id) {
+    async function deleteSvc(id) {
       if (!confirm('Excluir este serviço?')) return;
       State.data.servicos = State.data.servicos.filter(s => s.id !== id);
-      saveAll();
-      toast('Serviço excluído', 'info');
+      Storage.save('servicos', State.data.servicos);
+      localStorage.setItem('shelly_servicos_ts', Date.now().toString());
+      if (_fbReady && window.FirebaseDB) {
+        try { await window.FirebaseDB.fbDelete('servicos', id); } catch(e) { console.warn('[Firebase] deleteSvc:', e.message); }
+      }
+      toast('Serviço excluído com sucesso', 'success');
       renderSvcGrid();
     }
 
