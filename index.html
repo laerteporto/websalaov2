@@ -3521,9 +3521,42 @@
           await fbBatchSet('agendamentos', locais);
         }
 
-        if (clientes.length) { State.data.clientes = clientes; Storage.save('clientes', clientes); }
+        // Clientes: usa Firebase mas respeita exclusões locais mais recentes
+        if (clientes.length) {
+          const localCliTs = parseInt(localStorage.getItem('shelly_clientes_ts') || '0');
+          const fbCliTs    = parseInt(localStorage.getItem('shelly_clientes_fb_ts') || '0');
+          // Se houve operação local (delete/save) mais recente que a última sync com FB, mantém local
+          if (localCliTs > fbCliTs) {
+            // Sobe o estado local para o Firebase para sincronizar
+            if (window.FirebaseDB) {
+              const localIds = new Set(State.data.clientes.map(c=>String(c.id)));
+              const toDelete = clientes.filter(c=>!localIds.has(String(c.id)));
+              await Promise.all(toDelete.map(c=>window.FirebaseDB.fbDelete('clientes',c.id).catch(()=>{})));
+              if (State.data.clientes.length) await window.FirebaseDB.fbBatchSet('clientes', State.data.clientes).catch(()=>{});
+            }
+            localStorage.setItem('shelly_clientes_fb_ts', Date.now().toString());
+          } else {
+            State.data.clientes = clientes;
+            Storage.save('clientes', clientes);
+          }
+        }
         if (servicos.length) { State.data.servicos = servicos; Storage.save('servicos', servicos); }
-        if (financeiro.length) { State.data.financeiro = financeiro; Storage.save('financeiro', financeiro); }
+        if (financeiro.length) {
+          const localFinTs = parseInt(localStorage.getItem('shelly_financeiro_ts') || '0');
+          const fbFinTs    = parseInt(localStorage.getItem('shelly_financeiro_fb_ts') || '0');
+          if (localFinTs > fbFinTs) {
+            if (window.FirebaseDB) {
+              const localIds = new Set(State.data.financeiro.map(f=>String(f.id)));
+              const toDelete = financeiro.filter(f=>!localIds.has(String(f.id)));
+              await Promise.all(toDelete.map(f=>window.FirebaseDB.fbDelete('financeiro',f.id).catch(()=>{})));
+              if (State.data.financeiro.length) await window.FirebaseDB.fbBatchSet('financeiro', State.data.financeiro).catch(()=>{});
+            }
+            localStorage.setItem('shelly_financeiro_fb_ts', Date.now().toString());
+          } else {
+            State.data.financeiro = financeiro;
+            Storage.save('financeiro', financeiro);
+          }
+        }
 
         const locaisWpp = State.data.wppMensagens || [];
         const mergedWpp = [...wppMensagens];
@@ -4427,11 +4460,15 @@
 
     function editFin(id) { openFinModal(id); }
 
-    function deleteFin(id) {
+    async function deleteFin(id) {
       if (!confirm('Excluir este lançamento?')) return;
       State.data.financeiro = State.data.financeiro.filter(f => f.id !== id);
-      saveAll();
-      toast('Lançamento excluído', 'info');
+      Storage.save('financeiro', State.data.financeiro);
+      localStorage.setItem('shelly_financeiro_ts', Date.now().toString());
+      if (_fbReady && window.FirebaseDB) {
+        try { await window.FirebaseDB.fbDelete('financeiro', id); } catch(e) { console.warn('[Firebase] deleteFin:', e.message); }
+      }
+      toast('Lançamento excluído', 'success');
       renderFinTable();
     }
 
@@ -5507,11 +5544,15 @@
       renderCliTable();
     }
 
-    function deleteCli(id) {
+    async function deleteCli(id) {
       if (!confirm('Excluir este cliente?')) return;
       State.data.clientes = State.data.clientes.filter(c => c.id !== id);
-      saveAll();
-      toast('Cliente excluído', 'info');
+      Storage.save('clientes', State.data.clientes);
+      localStorage.setItem('shelly_clientes_ts', Date.now().toString());
+      if (_fbReady && window.FirebaseDB) {
+        try { await window.FirebaseDB.fbDelete('clientes', id); } catch(e) { console.warn('[Firebase] deleteCli:', e.message); }
+      }
+      toast('Cliente excluído com sucesso', 'success');
       renderCliTable();
     }
 
