@@ -5976,73 +5976,309 @@
 
     /* ── EXPORT PDF ─────────────────────────────────── */
     function exportPDF() {
-      const relContent = document.getElementById('rel-content');
-      if (!relContent) return;
-
-      const tipoLabel = {faturamento:'Faturamento',servicos:'Serviços',clientes:'Clientes'}[relType];
+      const tipoLabel    = {faturamento:'Faturamento', servicos:'Serviços', clientes:'Clientes'}[relType];
       const periodoLabel = getPeriodoLabel();
-      const dataGeracao = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+      const dataGeracao  = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+      const { fin, ag }  = getRelData();
 
-      const printWin = window.open('','_blank','width=900,height=700');
+      // ── Gera HTML do corpo conforme a aba ──────────────────────────────
+      let bodyHTML = '';
+
+      if (relType === 'faturamento') {
+        const agConf    = ag.filter(a=>a.status!=='cancelado');
+        const totalRec  = fin.filter(f=>f.tipo==='receita').reduce((s,f)=>s+f.valor,0);
+        const totalDesp = fin.filter(f=>f.tipo==='despesa').reduce((s,f)=>s+f.valor,0);
+        const saldo     = totalRec - totalDesp;
+        const margem    = totalRec > 0 ? Math.round((saldo/totalRec)*100) : 0;
+        const ticket    = agConf.length ? agConf.reduce((s,a)=>s+a.valor,0)/agConf.length : 0;
+
+        const byMonth = {};
+        fin.forEach(f=>{ const m=f.data.slice(0,7); if(!byMonth[m]) byMonth[m]={rec:0,desp:0}; if(f.tipo==='receita') byMonth[m].rec+=f.valor; else byMonth[m].desp+=f.valor; });
+        const byCat = {}; fin.filter(f=>f.tipo==='despesa').forEach(f=>{ const c=f.categoria||'Outros'; byCat[c]=(byCat[c]||0)+f.valor; });
+        const byRecCat = {}; fin.filter(f=>f.tipo==='receita').forEach(f=>{ const c=f.categoria||'Serviços'; byRecCat[c]=(byRecCat[c]||0)+f.valor; });
+
+        bodyHTML = `
+        <div class="kpi-grid">
+          <div class="kpi-box green"><div class="kpi-ico">💚</div><div class="kpi-val">${fmtMoney(totalRec)}</div><div class="kpi-lbl">Total Receitas</div><div class="kpi-sub">${agConf.length} atendimentos</div></div>
+          <div class="kpi-box red"><div class="kpi-ico">📉</div><div class="kpi-val">${fmtMoney(totalDesp)}</div><div class="kpi-lbl">Total Despesas</div><div class="kpi-sub">${Object.keys(byCat).length} categorias</div></div>
+          <div class="kpi-box ${saldo>=0?'green':'red'}"><div class="kpi-ico">⚖️</div><div class="kpi-val">${fmtMoney(saldo)}</div><div class="kpi-lbl">Saldo / Lucro</div><div class="kpi-sub">Margem: ${margem}%</div></div>
+          <div class="kpi-box gold"><div class="kpi-ico">🎯</div><div class="kpi-val">${fmtMoney(ticket)}</div><div class="kpi-lbl">Ticket Médio</div><div class="kpi-sub">${agConf.length} serviços</div></div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">📅 Faturamento por Período</div>
+          <table>
+            <thead><tr><th>Mês</th><th>Receitas</th><th>Despesas</th><th>Saldo</th><th>Margem</th><th>Atend.</th></tr></thead>
+            <tbody>${Object.entries(byMonth).sort((a,b)=>b[0].localeCompare(a[0])).map(([m,v])=>{
+              const [y,mo]=m.split('-'); const s=v.rec-v.desp; const mg=v.rec>0?Math.round((s/v.rec)*100):0;
+              const ats=ag.filter(a=>a.data.startsWith(m)&&a.status!=='cancelado').length;
+              return `<tr><td><strong>${getMonthName(parseInt(mo)-1)} ${y}</strong></td><td class="green">${fmtMoney(v.rec)}</td><td class="red">${fmtMoney(v.desp)}</td><td class="${s>=0?'green':'red'}"><strong>${fmtMoney(s)}</strong></td><td><span class="pill ${mg>=50?'pill-green':mg>=30?'pill-gold':'pill-red'}">${mg}%</span></td><td>${ats}</td></tr>`;
+            }).join('') || '<tr><td colspan="6" class="empty">Sem dados no período</td></tr>'}</tbody>
+          </table>
+        </div>
+
+        <div class="two-col">
+          <div class="section">
+            <div class="section-title">📂 Despesas por Categoria</div>
+            ${Object.entries(byCat).sort((a,b)=>b[1]-a[1]).map(([cat,val])=>`
+            <div class="bar-row">
+              <div class="bar-label"><span>${cat}</span><span class="red">${fmtMoney(val)}</span></div>
+              <div class="bar-track"><div class="bar-fill red-fill" style="width:${Math.round(val/(Math.max(...Object.values(byCat))||1)*100)}%"></div></div>
+            </div>`).join('') || '<p class="empty">Sem despesas</p>'}
+          </div>
+          <div class="section">
+            <div class="section-title">💚 Receitas por Categoria</div>
+            ${Object.entries(byRecCat).sort((a,b)=>b[1]-a[1]).map(([cat,val])=>`
+            <div class="bar-row">
+              <div class="bar-label"><span>${cat}</span><span class="green">${fmtMoney(val)}</span></div>
+              <div class="bar-track"><div class="bar-fill green-fill" style="width:${Math.round(val/(totalRec||1)*100)}%"></div></div>
+            </div>`).join('') || '<p class="empty">Sem receitas</p>'}
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">🗒️ Últimos Lançamentos</div>
+          <table>
+            <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Tipo</th><th>Valor</th></tr></thead>
+            <tbody>${fin.sort((a,b)=>b.data.localeCompare(a.data)).slice(0,15).map(f=>`
+              <tr><td>${fmtDate(f.data)}</td><td>${f.descricao||'—'}</td><td>${f.categoria||'—'}</td>
+              <td><span class="pill ${f.tipo==='receita'?'pill-green':'pill-red'}">${f.tipo==='receita'?'Receita':'Despesa'}</span></td>
+              <td class="${f.tipo==='receita'?'green':'red'}"><strong>${fmtMoney(f.valor)}</strong></td></tr>`).join('') || '<tr><td colspan="5" class="empty">Sem lançamentos</td></tr>'}
+            </tbody>
+          </table>
+        </div>`;
+
+      } else if (relType === 'servicos') {
+        const agConf = ag.filter(a=>a.status!=='cancelado');
+        const agCanc = ag.filter(a=>a.status==='cancelado');
+        const totalRec = agConf.reduce((s,a)=>s+a.valor,0);
+        const ticket   = agConf.length ? totalRec/agConf.length : 0;
+        const taxaCanc = ag.length ? Math.round((agCanc.length/ag.length)*100) : 0;
+        const svcMap = {}; agConf.forEach(a=>{ if(!svcMap[a.servicoNome]) svcMap[a.servicoNome]={count:0,rev:0}; svcMap[a.servicoNome].count++; svcMap[a.servicoNome].rev+=a.valor; });
+        const svcRows = Object.entries(svcMap).sort((a,b)=>b[1].count-a[1].count);
+        const maxCnt  = svcRows[0]?.[1].count||1;
+        const byDow = {0:0,1:0,2:0,3:0,4:0,5:0,6:0};
+        const dowL  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+        agConf.forEach(a=>{ const d=new Date(a.data+'T12:00:00'); byDow[d.getDay()]++; });
+
+        bodyHTML = `
+        <div class="kpi-grid">
+          <div class="kpi-box blue"><div class="kpi-ico">💈</div><div class="kpi-val">${svcRows.length}</div><div class="kpi-lbl">Tipos de Serviço</div></div>
+          <div class="kpi-box gold"><div class="kpi-ico">📅</div><div class="kpi-val">${agConf.length}</div><div class="kpi-lbl">Atendimentos</div><div class="kpi-sub">${agCanc.length} cancelados (${taxaCanc}%)</div></div>
+          <div class="kpi-box green"><div class="kpi-ico">💰</div><div class="kpi-val">${fmtMoney(totalRec)}</div><div class="kpi-lbl">Receita Total</div></div>
+          <div class="kpi-box purple"><div class="kpi-ico">🎯</div><div class="kpi-val">${fmtMoney(ticket)}</div><div class="kpi-lbl">Ticket Médio</div></div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">💈 Serviços Mais Realizados</div>
+          <table>
+            <thead><tr><th>#</th><th>Serviço</th><th>Qtd.</th><th>Receita</th><th>Ticket Médio</th><th>Participação</th></tr></thead>
+            <tbody>${svcRows.map(([name,v],i)=>`
+              <tr>
+                <td><strong class="gold">${i+1}</strong></td>
+                <td><strong>${name}</strong></td>
+                <td><span class="pill pill-blue">${v.count}x</span></td>
+                <td class="green">${fmtMoney(v.rev)}</td>
+                <td class="gold">${fmtMoney(v.rev/v.count)}</td>
+                <td>
+                  <div class="bar-inline">
+                    <div class="bar-track-sm"><div class="bar-fill gold-fill" style="width:${Math.round(v.count/maxCnt*100)}%"></div></div>
+                    <span class="bar-pct">${Math.round(v.count/agConf.length*100)}%</span>
+                  </div>
+                </td>
+              </tr>`).join('') || '<tr><td colspan="6" class="empty">Sem dados</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="section">
+          <div class="section-title">📆 Dias Mais Movimentados</div>
+          <div class="dow-grid">${dowL.map((d,i)=>`
+            <div class="dow-col">
+              <div class="dow-bar-wrap"><div class="dow-bar" style="height:${Math.round((byDow[i]||0)/Math.max(...Object.values(byDow),1)*80)}px"></div></div>
+              <div class="dow-label">${d}</div>
+              <div class="dow-count">${byDow[i]||0}</div>
+            </div>`).join('')}
+          </div>
+        </div>`;
+
+      } else {
+        const agConf = ag.filter(a=>a.status!=='cancelado');
+        const totalCli = State.data.clientes.length;
+        const cliMap = {};
+        agConf.forEach(a=>{ const k=a.clienteNome; if(!cliMap[k]) cliMap[k]={nome:k,count:0,rev:0,ultimo:a.data}; cliMap[k].count++; cliMap[k].rev+=a.valor; if(a.data>cliMap[k].ultimo) cliMap[k].ultimo=a.data; });
+        const cliRows = Object.values(cliMap).sort((a,b)=>b.count-a.count);
+        const topRev  = [...cliRows].sort((a,b)=>b.rev-a.rev);
+        const freq1=cliRows.filter(c=>c.count===1).length, freq2=cliRows.filter(c=>c.count>=2&&c.count<=3).length, freq4=cliRows.filter(c=>c.count>=4).length;
+
+        bodyHTML = `
+        <div class="kpi-grid">
+          <div class="kpi-box purple"><div class="kpi-ico">👥</div><div class="kpi-val">${totalCli}</div><div class="kpi-lbl">Total Cadastrados</div></div>
+          <div class="kpi-box blue"><div class="kpi-ico">🔁</div><div class="kpi-val">${cliRows.length}</div><div class="kpi-lbl">Clientes Ativos</div><div class="kpi-sub">no período</div></div>
+          <div class="kpi-box green"><div class="kpi-ico">💰</div><div class="kpi-val">${topRev[0]?fmtMoney(topRev[0].rev):'R$ 0'}</div><div class="kpi-lbl">Maior Receita</div><div class="kpi-sub">${topRev[0]?.nome||'-'}</div></div>
+          <div class="kpi-box gold"><div class="kpi-ico">🏆</div><div class="kpi-val">${cliRows[0]?.count||0}x</div><div class="kpi-lbl">Maior Frequência</div><div class="kpi-sub">${cliRows[0]?.nome||'-'}</div></div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">🏆 Clientes Mais Frequentes</div>
+          <table>
+            <thead><tr><th>#</th><th>Cliente</th><th>Visitas</th><th>Receita</th><th>Ticket Médio</th><th>Última Visita</th></tr></thead>
+            <tbody>${cliRows.slice(0,15).map((c,i)=>`
+              <tr>
+                <td><strong class="gold">${i+1}</strong></td>
+                <td><div class="cli-row"><div class="cli-avatar">${c.nome.charAt(0)}</div><strong>${c.nome}</strong></div></td>
+                <td><span class="pill pill-blue">${c.count}x</span></td>
+                <td class="green">${fmtMoney(c.rev)}</td>
+                <td class="gold">${fmtMoney(c.rev/c.count)}</td>
+                <td class="muted">${fmtDate(c.ultimo)}</td>
+              </tr>`).join('') || '<tr><td colspan="6" class="empty">Sem dados</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="section">
+          <div class="section-title">📊 Frequência de Retorno</div>
+          ${[['1ª visita — Novos',freq1,'#5C7AB8'],['2–3x — Recorrentes',freq2,'#B8916A'],['4x+ — Fiéis',freq4,'#4A8A6A']].map(([label,count,color])=>`
+          <div class="bar-row">
+            <div class="bar-label"><span>${label}</span><span style="color:${color};font-weight:700;">${count} cliente${count!==1?'s':''}</span></div>
+            <div class="bar-track"><div class="bar-fill" style="width:${cliRows.length?Math.round(count/cliRows.length*100):0}%;background:${color};"></div></div>
+          </div>`).join('')}
+        </div>`;
+      }
+
+      // ── CSS do PDF ─────────────────────────────────────────────────────────
+      const css = `
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { font-family:'DM Sans',Arial,sans-serif; color:#2C2016; background:#fff; font-size:13px; line-height:1.5; }
+
+        /* ── CAPA / HEADER ── */
+        .cover { background:linear-gradient(135deg,#8B6A4A 0%,#B8916A 50%,#D4A882 100%); color:#fff; padding:40px 48px 36px; margin-bottom:0; }
+        .cover-logo { font-family:'Cormorant Garamond',Georgia,serif; font-size:28px; font-weight:700; letter-spacing:1px; margin-bottom:4px; }
+        .cover-sub { font-size:12px; opacity:.8; letter-spacing:.08em; text-transform:uppercase; margin-bottom:28px; }
+        .cover-divider { width:48px; height:2px; background:rgba(255,255,255,.5); margin-bottom:24px; }
+        .cover-title { font-family:'Cormorant Garamond',Georgia,serif; font-size:36px; font-weight:600; letter-spacing:.5px; margin-bottom:6px; }
+        .cover-period { font-size:14px; opacity:.85; }
+        .cover-meta { margin-top:28px; font-size:11px; opacity:.7; }
+
+        /* ── BODY ── */
+        .content { padding:36px 48px; }
+
+        /* ── KPI GRID ── */
+        .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:28px; }
+        .kpi-box { border-radius:12px; padding:16px 18px; border:1px solid #E8DDD0; background:#FAF8F5; border-top:4px solid #B8916A; }
+        .kpi-box.green { border-top-color:#4A8A6A; }
+        .kpi-box.red   { border-top-color:#B85C5C; }
+        .kpi-box.blue  { border-top-color:#5C7AB8; }
+        .kpi-box.purple{ border-top-color:#8A6AAA; }
+        .kpi-box.gold  { border-top-color:#B8916A; }
+        .kpi-ico { font-size:18px; margin-bottom:8px; }
+        .kpi-val { font-family:'Cormorant Garamond',Georgia,serif; font-size:22px; font-weight:700; color:#2C2016; line-height:1.1; }
+        .kpi-lbl { font-size:10px; font-weight:600; color:#8A7060; text-transform:uppercase; letter-spacing:.06em; margin-top:5px; }
+        .kpi-sub { font-size:11px; color:#AAA; margin-top:3px; }
+
+        /* ── SECTIONS ── */
+        .section { margin-bottom:28px; }
+        .section-title { font-family:'Cormorant Garamond',Georgia,serif; font-size:16px; font-weight:600; color:#2C2016; padding-bottom:10px; margin-bottom:16px; border-bottom:2px solid #F0EBE3; display:flex; align-items:center; gap:8px; }
+
+        /* ── TABLE ── */
+        table { width:100%; border-collapse:collapse; font-size:12px; }
+        thead tr { background:#F5F1EB; }
+        thead th { padding:10px 12px; text-align:left; font-size:10px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:#8A7060; border-bottom:2px solid #E2D5C5; }
+        tbody tr { border-bottom:1px solid #F5F0EA; transition:background .1s; }
+        tbody tr:nth-child(even) { background:#FDFAF7; }
+        tbody tr:last-child { border-bottom:none; }
+        tbody td { padding:10px 12px; color:#4A3828; vertical-align:middle; }
+        tbody td strong { color:#2C2016; }
+
+        /* ── COLORS ── */
+        .green  { color:#4A8A6A !important; }
+        .red    { color:#B85C5C !important; }
+        .gold   { color:#B8916A !important; }
+        .muted  { color:#AAA !important; font-size:12px; }
+
+        /* ── PILLS / BADGES ── */
+        .pill { display:inline-block; padding:3px 10px; border-radius:99px; font-size:11px; font-weight:700; }
+        .pill-green  { background:#E8F5EE; color:#4A8A6A; border:1px solid #C8E8D8; }
+        .pill-red    { background:#FBE8E8; color:#B85C5C; border:1px solid #ECC8C8; }
+        .pill-gold   { background:#FBF3E8; color:#B8916A; border:1px solid #E8D8C0; }
+        .pill-blue   { background:#E8EEF8; color:#5C7AB8; border:1px solid #C8D8EC; }
+
+        /* ── BARS ── */
+        .two-col { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:28px; }
+        .bar-row { margin-bottom:12px; }
+        .bar-label { display:flex; justify-content:space-between; font-size:12px; font-weight:500; margin-bottom:5px; }
+        .bar-track { background:#F0EBE3; border-radius:4px; height:7px; overflow:hidden; }
+        .bar-fill  { height:100%; border-radius:4px; }
+        .green-fill { background:#4A8A6A; }
+        .red-fill   { background:#B85C5C; opacity:.75; }
+        .gold-fill  { background:#B8916A; }
+
+        /* Bar inline (tabela) */
+        .bar-inline { display:flex; align-items:center; gap:8px; }
+        .bar-track-sm { flex:1; background:#F0EBE3; border-radius:3px; height:5px; overflow:hidden; }
+        .bar-pct { font-size:10px; color:#AAA; white-space:nowrap; min-width:28px; }
+
+        /* ── DOW CHART ── */
+        .dow-grid { display:flex; gap:12px; align-items:flex-end; padding:8px 0; }
+        .dow-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; }
+        .dow-bar-wrap { height:90px; display:flex; align-items:flex-end; width:100%; }
+        .dow-bar { width:100%; background:linear-gradient(180deg,#B8916A,#D4A882); border-radius:5px 5px 0 0; min-height:4px; }
+        .dow-label { font-size:10px; color:#8A7060; font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
+        .dow-count { font-size:13px; font-weight:700; color:#B8916A; }
+
+        /* ── CLIENTE AVATAR ── */
+        .cli-row { display:flex; align-items:center; gap:8px; }
+        .cli-avatar { width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#8B6A4A,#D4A882); color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Cormorant Garamond',serif; font-size:13px; font-weight:700; flex-shrink:0; }
+
+        /* ── EMPTY ── */
+        .empty { text-align:center; color:#CCC; padding:20px; font-style:italic; }
+
+        /* ── FOOTER ── */
+        .pdf-footer { margin-top:40px; padding:16px 48px; background:#FAF8F5; border-top:1px solid #E8DDD0; display:flex; justify-content:space-between; font-size:11px; color:#AAA; }
+
+        /* ── PRINT ── */
+        @media print {
+          @page { margin:0; size:A4; }
+          .cover { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+          .kpi-box, .dow-bar, .bar-fill, thead tr { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+          .kpi-grid { page-break-inside:avoid; }
+          .section { page-break-inside:avoid; }
+        }
+      `;
+
+      const printWin = window.open('','_blank','width=1000,height=750');
       printWin.document.write(`<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <title>Relatório de ${tipoLabel} — Studio Shelly Rodrigues</title>
-<style>
-  * { box-sizing:border-box; margin:0; padding:0; }
-  body { font-family:'Segoe UI',Arial,sans-serif; color:#1A1714; background:#fff; padding:32px; font-size:13px; }
-  .pdf-header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #B8916A; padding-bottom:16px; margin-bottom:24px; }
-  .pdf-logo { font-family:Georgia,serif; font-size:20px; font-weight:700; color:#B8916A; }
-  .pdf-meta { text-align:right; font-size:12px; color:#888; }
-  .pdf-title { font-family:Georgia,serif; font-size:22px; font-weight:600; color:#2C2016; margin-bottom:4px; }
-  .pdf-period { font-size:13px; color:#888; margin-bottom:24px; }
-  .kpi-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:24px; }
-  .kpi-box { background:#FAF8F5; border:1px solid #E2D5C5; border-radius:10px; padding:14px; border-left:4px solid #B8916A; }
-  .kpi-val { font-family:Georgia,serif; font-size:20px; font-weight:700; color:#2C2016; }
-  .kpi-lbl { font-size:11px; color:#888; margin-top:4px; text-transform:uppercase; letter-spacing:.05em; }
-  .section { margin-bottom:24px; }
-  .section-title { font-family:Georgia,serif; font-size:15px; font-weight:600; color:#2C2016; border-bottom:1px solid #E2D5C5; padding-bottom:8px; margin-bottom:14px; }
-  table { width:100%; border-collapse:collapse; font-size:12px; }
-  thead th { background:#F5F1EB; padding:8px 10px; text-align:left; font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:#8A7060; border-bottom:1px solid #E2D5C5; }
-  tbody td { padding:9px 10px; border-bottom:1px solid #F0EBE3; color:#444; }
-  tbody tr:last-child td { border-bottom:none; }
-  .text-green { color:#4A8A6A; font-weight:600; }
-  .text-red { color:#B85C5C; font-weight:600; }
-  .text-gold { color:#B8916A; font-weight:600; }
-  .badge { display:inline-block; padding:2px 8px; border-radius:99px; font-size:11px; font-weight:700; }
-  .badge-green { background:#E8F5EE; color:#4A8A6A; }
-  .badge-red { background:#FBE8E8; color:#B85C5C; }
-  .badge-gold { background:#FBF3E8; color:#B8916A; }
-  .badge-blue { background:#E8EEF8; color:#5C7AB8; }
-  .progress-wrap { background:#F0EBE3; border-radius:4px; height:6px; overflow:hidden; }
-  .progress-fill { height:100%; background:#B8916A; border-radius:4px; }
-  .pdf-footer { margin-top:32px; padding-top:12px; border-top:1px solid #E2D5C5; font-size:11px; color:#AAA; display:flex; justify-content:space-between; }
-  @media print { body { padding:16px; } @page { margin:1.5cm; } }
-</style>
+<style>${css}</style>
 </head>
 <body>
-<div class="pdf-header">
-  <div>
-    <div class="pdf-logo">✂ Studio Shelly Rodrigues</div>
-    <div style="font-size:11px;color:#888;margin-top:3px;">Sistema de Gestão</div>
-  </div>
-  <div class="pdf-meta">
-    <div>Relatório gerado em ${dataGeracao}</div>
-    <div style="margin-top:2px;">WebSalão v2</div>
-  </div>
+
+<div class="cover">
+  <div class="cover-logo">✂ Studio Shelly Rodrigues</div>
+  <div class="cover-sub">Sistema de Gestão · WebSalão v2</div>
+  <div class="cover-divider"></div>
+  <div class="cover-title">Relatório de ${tipoLabel}</div>
+  <div class="cover-period">Período: ${periodoLabel}</div>
+  <div class="cover-meta">Gerado em ${dataGeracao}</div>
 </div>
-<div class="pdf-title">Relatório de ${tipoLabel}</div>
-<div class="pdf-period">Período: ${periodoLabel}</div>
-${relContent.innerHTML}
+
+<div class="content">
+  ${bodyHTML}
+</div>
+
 <div class="pdf-footer">
   <span>Studio Shelly Rodrigues — Sistema de Gestão</span>
   <span>Gerado automaticamente pelo WebSalão v2</span>
 </div>
+
 </body></html>`);
       printWin.document.close();
       printWin.focus();
-      setTimeout(()=>{ printWin.print(); }, 600);
+      setTimeout(()=>{ printWin.print(); }, 800);
       toast('PDF pronto para impressão!','success');
     }
 
