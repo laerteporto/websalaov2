@@ -2630,7 +2630,7 @@
           <label class="login-label">Usuário</label>
           <div class="login-input-wrap">
             <span class="login-input-icon">👤</span>
-            <input type="text" id="login-user" class="login-input" placeholder="Digite seu usuário" />
+            <input type="text" id="login-user" class="login-input" placeholder="Digite seu usuário" autofocus autocomplete="username" />
           </div>
         </div>
         <div class="login-field">
@@ -3979,6 +3979,7 @@
 
       if (!sessionStorage.getItem('auth_user')) {
         document.getElementById('login-overlay').style.display = 'flex';
+      setTimeout(() => { const u = document.getElementById('login-user'); if (u) u.focus(); }, 120);
       }
 
       initTheme();
