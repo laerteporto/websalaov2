@@ -5357,11 +5357,17 @@
 
       if (editId) {
         const i = State.data.agendamentos.findIndex(a => a.id === editId);
-        if (i >= 0) Object.assign(State.data.agendamentos[i], {
-          data, hora, clienteId: cliId, clienteNome: cli.nome,
-          servicoId: svcId, servicoNome: svc.nome,
-          valor: valor || svc.preco, status, obs
-        });
+        if (i >= 0) {
+          Object.assign(State.data.agendamentos[i], {
+            data, hora, clienteId: cliId, clienteNome: cli.nome,
+            servicoId: svcId, servicoNome: svc.nome,
+            valor: valor || svc.preco, status, obs
+          });
+          // Salva obs imediatamente no Firebase para a tela de confirmação do cliente
+          if (window.FirebaseDB) {
+            window.FirebaseDB.fbSet('agendamentos', editId, State.data.agendamentos[i]).catch(() => {});
+          }
+        }
         toast('Agendamento atualizado', 'success');
       } else {
         const novoAg = {
