@@ -3132,6 +3132,13 @@
                 <div class="c-info-value" id="c-hora">—</div>
               </div>
             </div>
+            <div class="c-info-row" id="c-obs-row" style="display:none;">
+              <div class="c-info-icon">📋</div>
+              <div>
+                <div class="c-info-label">Observação</div>
+                <div class="c-info-value" id="c-obs" style="font-size:13px;color:#e8c97a;line-height:1.5;">—</div>
+              </div>
+            </div>
           </div>
 
           <div class="c-divider"></div>
@@ -3260,6 +3267,10 @@
           document.getElementById('c-servico').textContent = ag.servicoNome || '—';
           document.getElementById('c-data').textContent = fmtDate(ag.data);
           document.getElementById('c-hora').textContent = ag.hora || '—';
+          if (ag.obs && ag.obs.trim()) {
+            document.getElementById('c-obs').textContent = ag.obs.trim();
+            document.getElementById('c-obs-row').style.display = 'flex';
+          }
           showMain();
 
           if (ag.status === 'confirmado' || ag.status === 'cancelado') {
