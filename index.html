@@ -4546,18 +4546,15 @@
       <div class="service-cat">${s.emoji || '💈'} ${s.categoria}</div>
       <div class="service-name">${s.nome}</div>
       <div class="service-stats" style="grid-template-columns:1fr 1fr;">
-        <div class="service-stat-item">
-          <div class="service-stat-label">Custo</div>
-          <div class="service-stat-value">${fmtMoney(s.custo)}</div>
-        </div>
+
         <div class="service-stat-item" style="grid-column:span 2;">
           <div class="service-stat-label">Preço</div>
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-            <div class="service-stat-value text-gold" style="font-size:16px;">${fmtMoney(s.preco)}</div>
             <span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px;white-space:nowrap;
               background:${(s.tipoPreco||'fixo')==='fixo'?'rgba(74,138,106,.12)':'rgba(92,122,184,.12)'};
               color:${(s.tipoPreco||'fixo')==='fixo'?'var(--green)':'var(--blue)'};
               border:1px solid ${(s.tipoPreco||'fixo')==='fixo'?'rgba(74,138,106,.25)':'rgba(92,122,184,.25)'};">${(s.tipoPreco||'fixo')==='fixo'?'Fixo':'A partir de'}</span>
+            <div class="service-stat-value text-gold" style="font-size:16px;">${fmtMoney(s.preco)}</div>
           </div>
         </div>
         <div class="service-stat-item">
