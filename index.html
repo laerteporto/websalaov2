@@ -4676,10 +4676,32 @@
       const hora = ag.hora;
       const servico = ag.servicoNome;
       const cliente = ag.clienteNome.split(' ')[0];
-
       const link = `https://websalaov2.vercel.app/confirmacao?id=${ag.id}`;
+      const obs = (ag.obs || '').trim();
+      const obsBloco = obs ? `\n\n📋 *Observação:* ${obs}` : '';
 
-      return `Olá, ${cliente}! 😊\n\nVocê tem um agendamento no *Studio Shelly Rodrigues*:\n\n✂️ *Serviço:* ${servico}\n📅 *Data:* ${data}\n⏰ *Horário:* ${hora}\n\nPara *confirmar* ou *cancelar* seu agendamento, acesse o link abaixo:\n👉 ${link}\n\nAguardamos você! 💛`;
+      return `Olá, ${cliente}! 😊\n\nVocê tem um agendamento no *Studio Shelly Rodrigues*:\n\n✂️ *Serviço:* ${servico}\n📅 *Data:* ${data}\n⏰ *Horário:* ${hora}${obsBloco}\n\nPara *confirmar* ou *cancelar* seu agendamento, acesse o link abaixo:\n👉 ${link}\n\nAguardamos você! 💛`;
+    }
+
+    function atualizarWppPreview(obsValue) {
+      const bubble = document.getElementById('wpp-bubble-preview');
+      if (!bubble) return;
+      // Pegar agendamento atual do modal
+      const agId = bubble.closest('[id^="modal"]') ? null : null;
+      // Montar texto atualizado com obs atual
+      const dataVal  = document.getElementById('ag-data')?.value || '';
+      const horaVal  = document.getElementById('ag-hora')?.value || '';
+      const cliSel   = document.getElementById('ag-cli');
+      const svcSel   = document.getElementById('ag-svc');
+      const cliOpt   = cliSel?.options[cliSel.selectedIndex];
+      const svcOpt   = svcSel?.options[svcSel.selectedIndex];
+      const cliNome  = cliOpt ? cliOpt.text.split(' —')[0].trim() : '';
+      const svcNome  = svcOpt ? svcOpt.text.split(' —')[0].trim() : '';
+      const primeiroNome = cliNome.split(' ')[0];
+      const dataFmt  = dataVal ? dataVal.split('-').reverse().join('/') : '';
+      const obsBloco = obsValue.trim() ? `\n\n?? *Observação:* ${obsValue.trim()}` : '';
+      const linkPlaceholder = 'https://websalaov2.vercel.app/confirmacao?id=...';
+      bubble.textContent = `Olá, ${primeiroNome || 'cliente'}! ??\n\nVocê tem um agendamento no *Studio Shelly Rodrigues*:\n\n✂️ *Serviço:* ${svcNome}\n?? *Data:* ${dataFmt}\n⏰ *Horário:* ${horaVal}${obsBloco}\n\nPara *confirmar* ou *cancelar* seu agendamento, acesse o link abaixo:\n?? ${linkPlaceholder}\n\nAguardamos você! ??`;
     }
 
     function enviarWhatsApp(agId) {
@@ -5157,7 +5179,7 @@
 
       <div class="wpp-preview">
         <div class="wpp-preview-label">📨 Prévia da mensagem</div>
-        <div class="wpp-bubble">${msg}</div>
+        <div class="wpp-bubble" id="wpp-bubble-preview">${msg}</div>
         <div class="wpp-time">${timeStr} ✓✓</div>
       </div>
 
@@ -5245,8 +5267,11 @@
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label">Observações</label>
-      <textarea class="form-control" id="ag-obs" rows="2" placeholder="Notas opcionais...">${item?.obs || ''}</textarea>
+      <label class="form-label" style="display:flex;align-items:center;gap:8px;">
+        Observações
+        <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;background:rgba(37,211,102,.12);color:#25D366;border:1px solid rgba(37,211,102,.25);">📋 Inclusa na msg WPP</span>
+      </label>
+      <textarea class="form-control" id="ag-obs" rows="2" placeholder="Ex: Trazer cabelo lavado, alergia a produtos com amônia..." oninput="atualizarWppPreview(this.value)">${item?.obs || ''}</textarea>
     </div>
     ${wppSection}
   `, `
