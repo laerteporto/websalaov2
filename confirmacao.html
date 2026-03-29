@@ -377,6 +377,13 @@
               <div class="info-value" id="info-hora">—</div>
             </div>
           </div>
+          <div class="info-row" id="row-obs" style="display: none;">
+            <div class="info-icon">📝</div>
+            <div class="info-content">
+              <div class="info-label">Observação</div>
+              <div class="info-value" id="info-obs">—</div>
+            </div>
+          </div>
         </div>
 
         <div class="divider"></div>
@@ -490,6 +497,12 @@
         $('info-servico').textContent = ag.servicoNome || '—';
         $('info-data').textContent = fmtDate(ag.data);
         $('info-hora').textContent = ag.hora || '—';
+
+        const obsTexto = (ag.obs || ag.observacoes || ag.observacao || '').toString().trim();
+        if (obsTexto) {
+          $('info-obs').textContent = obsTexto;
+          $('row-obs').style.display = 'flex';
+        }
 
         showLoading(false);
         showMain(true);
