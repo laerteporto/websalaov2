@@ -2349,6 +2349,10 @@
     async function fbSet(col, id, data) {
       await setDoc(doc(db, col, String(id)), data, { merge: true });
     }
+    async function fbSetFull(col, id, data) {
+      // Substitui o documento inteiro — garante que todos os campos sejam gravados
+      await setDoc(doc(db, col, String(id)), data);
+    }
     async function fbDelete(col, id) {
       await deleteDoc(doc(db, col, String(id)));
     }
@@ -2363,7 +2367,7 @@
         await batch.commit();
       }
     }
-    window.FirebaseDB = { fbGetAll, fbSet, fbDelete, fbBatchSet, db, collection, onSnapshot, getDoc, setDoc, doc };
+    window.FirebaseDB = { fbGetAll, fbSet, fbSetFull, fbDelete, fbBatchSet, db, collection, onSnapshot, getDoc, setDoc, doc };
     window.dispatchEvent(new Event('firebase-ready'));
   </script>
 </head>
@@ -4728,6 +4732,11 @@
       const msg = buildWppMsg(ag);
       const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
 
+      // Garante que o agendamento completo (com obs) está no Firebase antes de enviar o link
+      if (window.FirebaseDB) {
+        window.FirebaseDB.fbSetFull('agendamentos', ag.id, ag).catch(() => {});
+      }
+
       // Mark as "awaiting confirmation"
       const i = State.data.agendamentos.findIndex(a => a.id === agId);
       if (i >= 0) {
@@ -5363,9 +5372,9 @@
             servicoId: svcId, servicoNome: svc.nome,
             valor: valor || svc.preco, status, obs
           });
-          // Salva obs imediatamente no Firebase para a tela de confirmação do cliente
+          // Salva agendamento completo no Firebase (sem merge) para garantir campo obs
           if (window.FirebaseDB) {
-            window.FirebaseDB.fbSet('agendamentos', editId, State.data.agendamentos[i]).catch(() => {});
+            window.FirebaseDB.fbSetFull('agendamentos', editId, State.data.agendamentos[i]).catch(() => {});
           }
         }
         toast('Agendamento atualizado', 'success');
@@ -5407,7 +5416,7 @@
           }
           registrarMensagemEnviada(novoAg, cli);
           // Salva novo agendamento diretamente no Firebase (sem esperar batch)
-          if (window.FirebaseDB) window.FirebaseDB.fbSet('agendamentos', novoAg.id, novoAg).catch(() => { });
+          if (window.FirebaseDB) window.FirebaseDB.fbSetFull('agendamentos', novoAg.id, novoAg).catch(() => { });
           saveAll(); // salva wppMensagens no Firebase APÓS registrar
           updateWppBadge();
           if (document.getElementById('wpp-inbox-inner')) renderWppInboxCard();
