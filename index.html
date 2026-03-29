@@ -3698,7 +3698,7 @@
 
     // ─── ENVIAR WHATSAPP ─────────────────────────────────────────────────────────
     async function enviarWhatsAppBackend(agId) {
-      enviarWhatsApp(agId);
+      await enviarWhatsApp(agId);
     }
 
     // ─── DELETE FIREBASE ─────────────────────────────────────────────────────────
@@ -4719,7 +4719,7 @@
       bubble.textContent = `Olá, ${primeiroNome || 'cliente'}! ??\n\nVocê tem um agendamento no *Studio Shelly Rodrigues*:\n\n✂️ *Serviço:* ${svcNome}\n?? *Data:* ${dataFmt}\n⏰ *Horário:* ${horaVal}${obsBloco}\n\nPara *confirmar* ou *cancelar* seu agendamento, acesse o link abaixo:\n?? ${linkPlaceholder}\n\nAguardamos você! ??`;
     }
 
-    function enviarWhatsApp(agId) {
+    async function enviarWhatsApp(agId) {
       const ag = State.data.agendamentos.find(a => a.id === agId);
       if (!ag) return;
       const cli = State.data.clientes.find(c => c.id === ag.clienteId);
@@ -4728,16 +4728,7 @@
         return;
       }
 
-      const phone = formatWppPhone(cli.telefone);
-      const msg = buildWppMsg(ag);
-      const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
-
-      // Garante que o agendamento completo (com obs) está no Firebase antes de enviar o link
-      if (window.FirebaseDB) {
-        window.FirebaseDB.fbSetFull('agendamentos', ag.id, ag).catch(() => {});
-      }
-
-      // Mark as "awaiting confirmation"
+      // Atualiza flags antes de gravar
       const i = State.data.agendamentos.findIndex(a => a.id === agId);
       if (i >= 0) {
         State.data.agendamentos[i].wppEnviado = true;
@@ -4746,7 +4737,19 @@
           State.data.agendamentos[i].status = 'aguardando';
         }
       }
+
+      // Grava o agendamento COMPLETO no Firestore com await — garante obs antes de abrir link
+      if (window.FirebaseDB) {
+        try {
+          await window.FirebaseDB.fbSetFull('agendamentos', ag.id, State.data.agendamentos[i >= 0 ? i : 0]);
+        } catch(e) { console.warn('[enviarWhatsApp] fbSetFull:', e); }
+      }
+
       saveAll();
+
+      const phone = formatWppPhone(cli.telefone);
+      const msg = buildWppMsg(State.data.agendamentos.find(a => a.id === agId) || ag);
+      const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
 
       // Register in wpp inbox as sent
       registrarMensagemEnviada(ag, cli);
