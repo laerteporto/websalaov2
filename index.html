@@ -2350,8 +2350,9 @@
       await setDoc(doc(db, col, String(id)), data, { merge: true });
     }
     async function fbSetFull(col, id, data) {
-      // Substitui o documento inteiro — garante que todos os campos sejam gravados
-      await setDoc(doc(db, col, String(id)), data);
+      // Remove undefined e substitui o documento inteiro
+      const clean = JSON.parse(JSON.stringify(data, (k, v) => v === undefined ? null : v));
+      await setDoc(doc(db, col, String(id)), clean);
     }
     async function fbDelete(col, id) {
       await deleteDoc(doc(db, col, String(id)));
@@ -3271,8 +3272,10 @@
           document.getElementById('c-servico').textContent = ag.servicoNome || '—';
           document.getElementById('c-data').textContent = fmtDate(ag.data);
           document.getElementById('c-hora').textContent = ag.hora || '—';
-          if (ag.obs && ag.obs.trim()) {
-            document.getElementById('c-obs').textContent = ag.obs.trim();
+          // Exibe observação se existir (campo obs ou observacoes)
+          const obsTexto = (ag.obs || ag.observacoes || ag.observacao || '').toString().trim();
+          if (obsTexto) {
+            document.getElementById('c-obs').textContent = obsTexto;
             document.getElementById('c-obs-row').style.display = 'flex';
           }
           showMain();
@@ -4739,9 +4742,11 @@
       }
 
       // Grava o agendamento COMPLETO no Firestore com await — garante obs antes de abrir link
+      const agAtual = i >= 0 ? State.data.agendamentos[i] : ag;
       if (window.FirebaseDB) {
         try {
-          await window.FirebaseDB.fbSetFull('agendamentos', ag.id, State.data.agendamentos[i >= 0 ? i : 0]);
+          await window.FirebaseDB.fbSetFull('agendamentos', agAtual.id, agAtual);
+          console.log('[WPP] Firebase gravado com obs:', agAtual.obs);
         } catch(e) { console.warn('[enviarWhatsApp] fbSetFull:', e); }
       }
 
