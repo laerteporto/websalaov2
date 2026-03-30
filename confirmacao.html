@@ -115,7 +115,6 @@
       text-align: center;
     }
 
-    .info-content {}
 
     .info-label {
       font-size: 11px;
@@ -561,8 +560,12 @@
 
         // Busca a wppMensagens se existir
         try {
-          const q = query(collection(db, 'wppMensagens'), where('agId', '==', Number(agId)));
-          const snapW = await getDocs(q);
+          let q = query(collection(db, 'wppMensagens'), where('agId', '==', Number(agId)));
+          let snapW = await getDocs(q);
+          if (snapW.empty) {
+            q = query(collection(db, 'wppMensagens'), where('agId', '==', String(agId)));
+            snapW = await getDocs(q);
+          }
           if (!snapW.empty) {
             await updateDoc(snapW.docs[0].ref, {
               resposta: novoStatus === 'confirmado' ? 'sim' : 'nao',
