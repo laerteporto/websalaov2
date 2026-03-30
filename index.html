@@ -3926,6 +3926,7 @@
                 State.data.wppMensagens[mi].respostaEm = ag.confirmadoEm || new Date().toISOString();
                 State.data.wppMensagens[mi].lida = false;
                 Storage.save('wppMensagens', State.data.wppMensagens);
+                saveAll();
               }
             }
           }
