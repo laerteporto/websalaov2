@@ -5085,6 +5085,18 @@
       }
     }
 
+    window.marcarWppComoLida = function (msgId) {
+      if (!State.data.wppMensagens) return;
+      const mi = State.data.wppMensagens.findIndex(m => m.id === msgId);
+      if (mi >= 0 && !State.data.wppMensagens[mi].lida) {
+        State.data.wppMensagens[mi].lida = true;
+        Storage.save('wppMensagens', State.data.wppMensagens);
+        saveAll();
+        updateWppBadge();
+        if (document.getElementById('wpp-inbox-inner')) renderWppInboxCard();
+      }
+    };
+
     function processarResposta(msgId, resposta) {
       if (!State.data.wppMensagens) return;
       const mi = State.data.wppMensagens.findIndex(m => m.id === msgId);
@@ -5235,7 +5247,7 @@
         background:rgba(37,211,102,0.07);border-bottom:1px solid rgba(37,211,102,0.12);">
         <span style="display:flex;align-items:center;gap:8px;color:#25D366;text-transform:uppercase;letter-spacing:.04em;">
           <span style="width:8px;height:8px;border-radius:50%;background:#25D366;display:inline-block;animation:pulseBadge 2s ease infinite;"></span>
-          ${pendentes.length} aguardando resposta
+          ${pendentes.length} pendências (não lidas)
         </span>
         <span style="color:var(--text-muted);font-weight:400;font-size:11px;">${msgs.length} mensagens no total</span>
       </div>`;
@@ -5269,7 +5281,8 @@
         const unreadDot = !m.lida ? '<span style="display:inline-block;width:7px;height:7px;background:#25D366;border-radius:50%;margin-left:5px;vertical-align:middle;flex-shrink:0;"></span>' : '';
         const borderStyle = !m.lida ? 'border-left:3px solid #25D366;background:rgba(37,211,102,0.04);' : 'border-left:3px solid transparent;';
 
-        html += `<div class="wpp-inbox-item" style="${borderStyle}">
+        const clickHandler = !m.lida ? `onclick="marcarWppComoLida(${m.id})" style="cursor:pointer;${borderStyle}"` : `style="${borderStyle}"`;
+        html += `<div class="wpp-inbox-item" ${clickHandler}>
           <div class="wpp-avatar">${m.clienteNome.charAt(0).toUpperCase()}</div>
           <div class="wpp-inbox-info">
             <div class="wpp-inbox-name">${m.clienteNome.split(' ').slice(0, 2).join(' ')}${unreadDot}</div>
