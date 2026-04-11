@@ -2326,6 +2326,10 @@
       setDoc, deleteDoc, onSnapshot, writeBatch
     }
       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import {
+      getAuth, signInAnonymously, signOut as fbSignOut, onAuthStateChanged
+    }
+      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBQcTGkiastpRAjGthU9nHy_uqpQjUMdu0",
@@ -2337,6 +2341,7 @@
     };
     const fbApp = initializeApp(firebaseConfig);
     const db = getFirestore(fbApp);
+    const auth = getAuth(fbApp);
 
     async function fbGetAll(col) {
       const snap = await getDocs(collection(db, col));
@@ -2368,7 +2373,24 @@
         await batch.commit();
       }
     }
-    window.FirebaseDB = { fbGetAll, fbSet, fbSetFull, fbDelete, fbBatchSet, db, collection, onSnapshot, getDoc, setDoc, doc };
+
+    // Autenticar anonimamente no Firebase Auth — chamado após validação PBKDF2
+    async function fbSignInAnon() {
+      if (auth.currentUser) return auth.currentUser;
+      const cred = await signInAnonymously(auth);
+      return cred.user;
+    }
+
+    // Logout do Firebase Auth
+    async function fbLogout() {
+      try { await fbSignOut(auth); } catch(e) { console.warn('[Auth] signOut:', e.message); }
+    }
+
+    window.FirebaseDB = {
+      fbGetAll, fbSet, fbSetFull, fbDelete, fbBatchSet,
+      fbSignInAnon, fbLogout,
+      db, auth, collection, onSnapshot, getDoc, setDoc, doc
+    };
     window.dispatchEvent(new Event('firebase-ready'));
   </script>
 </head>
@@ -2711,7 +2733,7 @@
       }
 
       async function execLogin() {
-        const user = document.getElementById('login-user').value.trim();
+        const user = document.getElementById('login-user').value.trim().toLowerCase();
         const pass = document.getElementById('login-pass').value.trim();
         if (!user || !pass) { alert("Preencha usuário e senha"); return; }
 
@@ -2720,22 +2742,25 @@
         btn.disabled = true;
 
         try {
+          // Aguarda Firebase estar pronto (máx 8 segundos)
+          if (!window.FirebaseDB) {
+            await new Promise((resolve, reject) => {
+              const t = setTimeout(() => reject(new Error("Tempo esgotado ao conectar com o servidor. Recarregue a página.")), 8000);
+              window.addEventListener('firebase-ready', () => { clearTimeout(t); resolve(); }, { once: true });
+            });
+          }
           if (!window.FirebaseDB || !window.FirebaseDB.getDoc) {
-            throw new Error("Aguardando carregamento do Firestore. Tente em instantes.");
-          }
-          const { getDoc, setDoc, doc, db } = window.FirebaseDB;
-
-          // Auto-provisionamento (para initial bootstrap: se "laerte"/"laerte123" ou "shelly"/"shelly123")
-          if ((user === 'laerte' && pass === 'laerte123') || (user === 'shelly' && pass === 'shelly123')) {
-            const checkDoc = await getDoc(doc(db, 'usuarios', user));
-            if (!checkDoc.exists()) {
-              const salt = "salsa_" + user + "_2026";
-              const hash = await hashPBKDF2(pass, salt);
-              await setDoc(doc(db, 'usuarios', user), { hash, salt });
-              console.log("Usuário provisionado silenciosamente.");
-            }
+            throw new Error("Serviço indisponível no momento. Tente novamente.");
           }
 
+          const { getDoc, setDoc, doc, db, fbSignInAnon } = window.FirebaseDB;
+
+          // ── Passo 1: autenticar anonimamente no Firebase Auth
+          // Isso é necessário para respeitar as regras de segurança do Firestore.
+          // A identidade real do usuário é validada pelo PBKDF2 no passo seguinte.
+          await fbSignInAnon();
+
+          // ── Passo 2: buscar documento do usuário no Firestore
           const uDoc = await getDoc(doc(db, 'usuarios', user));
           if (!uDoc.exists()) {
             alert('Usuário não encontrado ou credenciais incorretas.');
@@ -2744,18 +2769,33 @@
           }
 
           const bData = uDoc.data();
-          const inputHash = await hashPBKDF2(pass, bData.salt);
 
+          // ── Passo 3: verificar hash PBKDF2
+          // Se o documento não tiver hash/salt ainda (usuário migrado), provisiona agora
+          if (!bData.hash || !bData.salt) {
+            // Primeiro acesso: cria hash para este usuário usando a senha fornecida
+            const salt = "salsa_" + user + "_2026";
+            const hash = await hashPBKDF2(pass, salt);
+            await setDoc(doc(db, 'usuarios', user), { hash, salt }, { merge: true });
+            // Loga o sucesso automaticamente
+            sessionStorage.setItem('auth_user', user);
+            document.getElementById('login-overlay').style.display = 'none';
+            return;
+          }
+
+          const inputHash = await hashPBKDF2(pass, bData.salt);
           if (inputHash === bData.hash) {
-            // Sucesso!
+            // ── Sucesso! Sessão estabelecida
             sessionStorage.setItem('auth_user', user);
             document.getElementById('login-overlay').style.display = 'none';
           } else {
+            // Falha na senha — faz logout do Firebase Auth para não deixar sessão anônima ativa
+            if (window.FirebaseDB && window.FirebaseDB.fbLogout) await window.FirebaseDB.fbLogout();
             alert('Usuário ou senha incorretos.');
           }
         } catch (e) {
-          console.error(e);
-          alert(e.message);
+          console.error('[Login]', e);
+          alert(e.message || 'Erro ao autenticar. Verifique sua conexão.');
         }
         btn.textContent = '🔑 Entrar';
         btn.disabled = false;
@@ -2774,7 +2814,11 @@
 
         try {
           if (!window.FirebaseDB || !window.FirebaseDB.getDoc) throw new Error("Aguardando carregamento de sistema...");
-          const { getDoc, setDoc, doc, db } = window.FirebaseDB;
+          const { getDoc, setDoc, doc, db, fbSignInAnon } = window.FirebaseDB;
+
+          // Autenticar no Firebase Auth antes de gravar
+          await fbSignInAnon();
+
           const uDoc = await getDoc(doc(db, 'usuarios', user));
 
           let salt = "salsa_" + user + "_2026";
@@ -3364,7 +3408,7 @@
     <div class="sidebar-footer" style="display:flex; flex-direction:column; gap:12px; align-items:stretch;">
       <!-- Logout expandido -->
       <button class="btn btn-outline btn-sm" style="width:100%; border-color:#e0603f; color:#e0603f; justify-content:center;"
-        onclick="sessionStorage.removeItem('auth_user'); window.location.reload();">
+        onclick="sessionStorage.removeItem('auth_user'); if(window.FirebaseDB && window.FirebaseDB.fbLogout){ window.FirebaseDB.fbLogout().finally(()=>window.location.reload()); } else { window.location.reload(); }">
         <span class="btn-logout-text">Sair / Logout</span>
         <span class="btn-logout-icon" style="display:none;font-size:18px;" title="Sair">🚪</span>
       </button>
